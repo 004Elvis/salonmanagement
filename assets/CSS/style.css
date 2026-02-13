@@ -1,0 +1,160 @@
+/* assets/css/style.css */
+
+/* Import Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+:root {
+    --bg-color: #f4f7f6;
+    --text-color: #333;
+    --card-bg: rgba(255, 255, 255, 0.95); /* Semi-transparent for glass effect */
+    --primary: #d4af37; /* Gold */
+    --primary-hover: #b5952f;
+    --secondary: #2c3e50; /* Dark Blue */
+    --input-bg: #ffffff;
+    --input-border: #ddd;
+    --placeholder-color: #999;
+}
+
+[data-theme="dark"] {
+    --bg-color: #1a1a1a;
+    --text-color: #f4f7f6;
+    --card-bg: rgba(45, 45, 45, 0.95);
+    --input-bg: #2b2b2b; /* Darker background for inputs */
+    --input-border: #555;
+    --secondary: #ecf0f1;
+    --placeholder-color: #bbb; /* Lighter gray for dark mode */
+}
+
+body {
+    background-color: var(--bg-color);
+    /* Add a background image for the landing page feel */
+    background-image: url('../images/salon-bg.jpg'); 
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    color: var(--text-color);
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Glassmorphism Card for Login */
+.login-container,
+.register-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1; /* Pushes footer down */
+    padding: 20px;
+}
+
+.login-card,
+.register-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(10px); /* Frosted glass effect */
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    transition: background 0.3s ease;
+}
+
+/* Typography */
+h1, h2, h3 { margin-top: 0; color: var(--primary); }
+p { font-size: 0.9rem; color: var(--text-color); opacity: 0.8; }
+
+/* Form Elements */
+.form-group { margin-bottom: 20px; text-align: left; }
+label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; color: var(--text-color); }
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    box-sizing: border-box; /* Ensures padding doesn't widen element */
+    font-family: inherit;
+    background: transparent; /* Default to transparent to pick up card color */
+    color: var(--text-color);
+    transition: border-color 0.3s, color 0.3s;
+}
+
+/* --- IMPORTANT: Fix for Dark Mode Inputs & Dropdowns --- */
+[data-theme="dark"] input, 
+[data-theme="dark"] select {
+    background-color: var(--input-bg); /* Force a dark background */
+    color: #fff; /* Force white text */
+    border-color: #555;
+}
+
+/* Fix for the actual dropdown menu items */
+[data-theme="dark"] option {
+    background-color: #2b2b2b;
+    color: #fff;
+}
+
+/* Placeholder Text Color */
+::placeholder {
+    color: var(--placeholder-color);
+    opacity: 1; /* Firefox fix */
+}
+
+/* Password Wrapper for Eye Icon */
+.password-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-wrapper input {
+    padding-right: 40px; /* Make space for the eye icon */
+}
+
+.password-wrapper .toggle-password {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #888;
+    z-index: 10; /* Ensure it sits on top of the input */
+}
+
+/* Make icon lighter in dark mode */
+[data-theme="dark"] .password-wrapper .toggle-password {
+    color: #ccc;
+}
+
+/* Buttons */
+.btn {
+    padding: 12px;
+    border: none;
+    cursor: pointer;
+    border-radius: 8px;
+    font-weight: 600;
+    width: 100%;
+    transition: transform 0.2s;
+}
+.btn:hover { transform: translateY(-2px); }
+
+.btn-primary { background-color: var(--primary); color: white; }
+.btn-primary:hover { background-color: var(--primary-hover); }
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid var(--primary);
+    color: var(--primary);
+    margin-top: 10px;
+    text-decoration: none;
+    display: inline-block; /* Essential for <a> tags acting as buttons */
+    box-sizing: border-box;
+    text-align: center;
+}
+.btn-outline:hover { background: var(--primary); color: white; }
+
+/* Navbar adjustment */
+.navbar { background: var(--card-bg) !important; }
