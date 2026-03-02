@@ -11,148 +11,333 @@ checkRole(['Staff']);
 $staff_id = $_SESSION['user_id'];
 $today = date('Y-m-d');
 
-// --- HANDLE STATUS UPDATES (Quick Actions) ---
-if (isset($_POST['update_status'])) {
-    $appt_id = $_POST['appointment_id'];
-    $new_status = $_POST['status'];
+// --- HANDLE PROFILE PICTURE UPLOAD ---
+if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] == 0) {
+    $allowed = ['jpg', 'jpeg', 'png', 'webp'];
+    $filename = $_FILES['profile_picture']['name'];
+    $ext = pathinfo($filename, PATHINFO_EXTENSION);
     
-    // Security: Ensure this appointment actually belongs to this staff member
+    if (in_array(strtolower($ext), $allowed)) {
+        $new_filename = 'staff_' . $staff_id . '_' . time() . '.' . $ext;
+        $upload_dir = '../uploads/';
+        if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+        
+        move_uploaded_file($_FILES['profile_picture']['tmp_name'], $upload_dir . $new_filename);
+        
+        $stmt = $pdo->prepare("UPDATE users SET profile_picture = ? WHERE user_id = ?");
+        $stmt->execute([$new_filename, $staff_id]);
+        
+        header("Location: dashboard.php?success=Profile picture updated");
+        exit();
+    }
+}
+
+// Fetch staff details
+$stmt = $pdo->prepare("SELECT profile_picture FROM users WHERE user_id = ?");
+$stmt->execute([$staff_id]);
+$staff_user = $stmt->fetch();
+$profile_pic_url = !empty($staff_user['profile_picture']) ? '../uploads/' . htmlspecialchars($staff_user['profile_picture']) : '';
+
+// --- HANDLE STATUS UPDATES ---
+if (isset($_POST['status']) && isset($_POST['appointment_id'])) {
+    $appt_id = $_POST['appointment_id'];
+    $new_status = $_POST['status']; // 'Confirmed' or 'Cancelled'
+    
     $stmt = $pdo->prepare("UPDATE appointments SET status = ? WHERE appointment_id = ? AND staff_id = ?");
     $stmt->execute([$new_status, $appt_id, $staff_id]);
     
-    // Refresh to show changes
-    header("Location: dashboard.php?success=Status updated to $new_status");
+    header("Location: dashboard.php?success=Appointment " . $new_status);
     exit();
 }
 
 // --- FETCH DATA FOR DASHBOARD ---
 
-// A. Get Today's Appointments Count
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM appointments WHERE staff_id = ? AND appointment_date = ?");
-$stmt->execute([$staff_id, $today]);
-$today_count = $stmt->fetchColumn();
-
-// B. Calculate Total Revenue (Completed Appointments Only)
-// Joins with 'services' table to sum the price
+// A. Pending Requests
 $stmt = $pdo->prepare("
-    SELECT SUM(s.price_kes) 
-    FROM appointments a 
-    JOIN services s ON a.service_id = s.service_id 
-    WHERE a.staff_id = ? AND a.status = 'Completed'
+    SELECT a.*, u.full_name AS client_name, s.service_name 
+    FROM appointments a
+    JOIN users u ON a.customer_id = u.user_id
+    JOIN services s ON a.service_id = s.service_id
+    WHERE a.staff_id = ? AND a.status = 'Pending'
+    ORDER BY a.appointment_date ASC, a.appointment_time ASC
 ");
 $stmt->execute([$staff_id]);
-$total_revenue = $stmt->fetchColumn() ?: 0.00; // Default to 0 if null
+$pending_requests = $stmt->fetchAll();
 
-// C. Fetch Upcoming Schedule (Date >= Today)
-$sql = "
+// B. Upcoming Schedule (All Confirmed appointments)
+$stmt = $pdo->prepare("
     SELECT a.*, u.full_name AS client_name, u.phone, s.service_name, s.duration_minutes, s.price_kes
     FROM appointments a
     JOIN users u ON a.customer_id = u.user_id
     JOIN services s ON a.service_id = s.service_id
-    WHERE a.staff_id = ? AND a.appointment_date >= ?
+    WHERE a.staff_id = ? AND a.status = 'Confirmed'
     ORDER BY a.appointment_date ASC, a.appointment_time ASC
-";
-$stmt = $pdo->prepare($sql);
-$stmt->execute([$staff_id, $today]);
-$appointments = $stmt->fetchAll();
+");
+$stmt->execute([$staff_id]);
+$scheduled_appointments = $stmt->fetchAll();
 
-// --- START VIEW ---
-require '../includes/header.php'; 
+// C. Performance Tracker (Weekly Data)
+$startOfWeek = date('Y-m-d', strtotime('monday this week'));
+$endOfWeek = date('Y-m-d', strtotime('sunday this week'));
+
+$stmt = $pdo->prepare("
+    SELECT appointment_date, COUNT(*) as count 
+    FROM appointments 
+    WHERE staff_id = ? AND status = 'Confirmed' 
+    AND appointment_date BETWEEN ? AND ? 
+    GROUP BY appointment_date
+");
+$stmt->execute([$staff_id, $startOfWeek, $endOfWeek]);
+$weekly_counts = $stmt->fetchAll(PDO::FETCH_KEY_PAIR); 
+
+$week_days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+$chart_data = [];
+$max_appts = 0;
+
+foreach($week_days as $i => $dayName) {
+    $date = date('Y-m-d', strtotime($startOfWeek . " +$i days"));
+    $count = $weekly_counts[$date] ?? 0;
+    $chart_data[$dayName] = $count;
+    if($count > $max_appts) $max_appts = $count;
+}
+
+// D. Clients List
+$stmt = $pdo->prepare("
+    SELECT DISTINCT u.user_id, u.full_name, u.phone 
+    FROM appointments a
+    JOIN users u ON a.customer_id = u.user_id
+    WHERE a.staff_id = ? AND a.status = 'Confirmed'
+");
+$stmt->execute([$staff_id]);
+$clients = $stmt->fetchAll();
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Dashboard - Elvis Salon</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { display: flex; height: 100vh; background-color: #f9f9fb; color: #333; }
+        
+        .sidebar { width: 250px; background-color: #fff; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px; font-size: 24px; font-weight: bold; border-bottom: 1px solid #ddd; }
+        .nav-menu { list-style: none; padding: 20px 0; }
+        .nav-item { padding: 15px 25px; cursor: pointer; color: #555; display: flex; align-items: center; gap: 15px; transition: 0.2s; }
+        .nav-item:hover, .nav-item.active { background-color: #f0f0f0; color: #000; font-weight: 600; }
+        
+        .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .topbar { height: 70px; border-bottom: 1px solid #ddd; display: flex; justify-content: flex-end; align-items: center; padding: 0 30px; gap: 15px; }
+        .btn-logout { padding: 8px 15px; border: 1px solid #333; background: #fff; border-radius: 5px; text-decoration: none; color: #333; font-size: 14px; }
+        
+        .avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #333; background-size: cover; background-position: center; background-color: #eee; cursor: pointer; }
+        
+        .content { flex: 1; padding: 30px; overflow-y: auto; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .requests-container { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 30px; }
+        .request-card { background: #fff; border: 1px solid #333; border-radius: 8px; padding: 15px; width: 300px; display: flex; justify-content: space-between; }
+        .btn-action { padding: 6px 12px; border: 1px solid #333; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-bottom: 5px; width: 100%; }
+        .btn-accept { background: #85d285; }
+        .btn-decline { background: #f28b82; }
 
-<div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <h1>👋 Welcome, <?php echo htmlspecialchars($_SESSION['name']); ?></h1>
-    <div>
-        <a href="availability.php" class="btn" style="background: #555; color: white;">Manage My Availability</a>
+        .schedule-box { background: #fff; border: 1px solid #333; border-radius: 8px; padding: 20px; margin-bottom: 30px; }
+        .schedule-table { width: 100%; border-collapse: collapse; }
+        .schedule-table th, .schedule-table td { border: 1px solid #eee; padding: 12px; text-align: left; }
+        .appt-block { background: #e8f5e9; padding: 8px; border-left: 4px solid #4caf50; border-radius: 4px; font-size: 13px; }
+
+        .perf-box { background: #fff; border: 1px solid #333; border-radius: 8px; padding: 20px; max-width: 500px; height: 220px; position: relative; }
+        .graph-container { display:flex; align-items:flex-end; justify-content: space-around; height:120px; margin-top: 40px; border-bottom:1px solid #333; }
+        .bar-wrapper { display:flex; flex-direction:column; align-items:center; width: 12%; }
+        .graph-bar { width: 100%; background: #4caf50; border: 1px solid #333; border-radius: 3px 3px 0 0; transition: height 0.5s; }
+        
+        .success-msg { background: #d4edda; color: #155724; padding: 10px; margin-bottom: 20px; border-radius: 5px; border: 1px solid #c3e6cb; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">👤 Elvis Salon</div>
+        <ul class="nav-menu">
+            <li class="nav-item active" onclick="switchTab('home')">🏠 Home</li>
+            <li class="nav-item" onclick="switchTab('schedule')">📅 Schedule</li>
+            <li class="nav-item" onclick="switchTab('requests')">📄 Requests</li>
+            <li class="nav-item" onclick="switchTab('clients')">👥 Clients</li>
+        </ul>
     </div>
-</div>
 
-<div class="stats-grid" style="display: flex; gap: 20px; margin-bottom: 30px;">
-    <div class="card" style="flex: 1; text-align: center; border-left: 5px solid var(--primary);">
-        <h3>Appointments Today</h3>
-        <p style="font-size: 2rem; font-weight: bold; margin: 10px 0;"><?php echo $today_count; ?></p>
-        <small><?php echo date('l, d M Y'); ?></small>
-    </div>
-
-    <div class="card" style="flex: 1; text-align: center; border-left: 5px solid #27ae60;">
-        <h3>My Total Earnings</h3>
-        <p style="font-size: 2rem; font-weight: bold; margin: 10px 0; color: #27ae60;">
-            KES <?php echo number_format($total_revenue, 2); ?>
-        </p>
-        <small>From completed services</small>
-    </div>
-</div>
-
-<div class="card">
-    <h2 style="border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">My Schedule</h2>
-
-    <?php if (count($appointments) > 0): ?>
-        <div style="overflow-x: auto;">
-            <table>
-                <thead>
-                    <tr style="background: #f8f9fa;">
-                        <th>Date & Time</th>
-                        <th>Client Details</th>
-                        <th>Service</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($appointments as $appt): ?>
-                        <tr>
-                            <td>
-                                <strong><?php echo date('M d', strtotime($appt['appointment_date'])); ?></strong><br>
-                                <span style="color: #666;"><?php echo date('h:i A', strtotime($appt['appointment_time'])); ?></span>
-                            </td>
-
-                            <td>
-                                <?php echo htmlspecialchars($appt['client_name']); ?><br>
-                                <small>📞 <?php echo htmlspecialchars($appt['phone']); ?></small>
-                            </td>
-
-                            <td>
-                                <?php echo htmlspecialchars($appt['service_name']); ?><br>
-                                <small>KES <?php echo number_format($appt['price_kes']); ?> • <?php echo $appt['duration_minutes']; ?> mins</small>
-                            </td>
-
-                            <td>
-                                <?php 
-                                    $statusColor = 'gray';
-                                    if($appt['status'] == 'Confirmed') $statusColor = 'blue';
-                                    if($appt['status'] == 'Completed') $statusColor = 'green';
-                                    if($appt['status'] == 'Cancelled') $statusColor = 'red';
-                                ?>
-                                <span style="padding: 5px 10px; background: <?php echo $statusColor; ?>; color: white; border-radius: 15px; font-size: 0.8rem;">
-                                    <?php echo $appt['status']; ?>
-                                </span>
-                            </td>
-
-                            <td>
-                                <?php if ($appt['status'] != 'Completed' && $appt['status'] != 'Cancelled'): ?>
-                                    <form method="POST" style="display:inline;">
-                                        <input type="hidden" name="appointment_id" value="<?php echo $appt['appointment_id']; ?>">
-                                        
-                                        <button type="submit" name="update_status" value="Completed" class="btn" style="background: #27ae60; color: white; padding: 5px 10px; font-size: 0.8rem;" title="Mark as Done">
-                                            ✔ Done
-                                        </button>
-                                        
-                                        <button type="submit" name="update_status" value="Cancelled" class="btn" style="background: #c0392b; color: white; padding: 5px 10px; font-size: 0.8rem;" title="Cancel Appointment" onclick="return confirm('Are you sure you want to cancel this?');">
-                                            ✖ Cancel
-                                        </button>
-                                    </form>
-                                <?php else: ?>
-                                    <span style="color: #aaa;">Closed</span>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+    <div class="main-wrapper">
+        <div class="topbar">
+            <a href="availability.php" class="btn-logout">📅 Manage Availability</a>
+            <a href="../logout.php" class="btn-logout" style="background: #333; color: #fff;">Logout</a>
+            
+            <form id="avatarForm" method="POST" enctype="multipart/form-data">
+                <label for="profileUpload">
+                    <div class="avatar" style="<?= $profile_pic_url ? "background-image: url('$profile_pic_url');" : "" ?>"></div>
+                </label>
+                <input type="file" id="profileUpload" name="profile_picture" style="display: none;" onchange="this.form.submit();">
+            </form>
         </div>
-    <?php else: ?>
-        <p style="text-align: center; padding: 20px; color: #666;">You have no upcoming appointments.</p>
-    <?php endif; ?>
-</div>
 
-<?php require '../includes/footer.php'; ?>
+        <div class="content">
+            <?php if(isset($_GET['success'])): ?>
+                <div class="success-msg"><?= htmlspecialchars($_GET['success']) ?></div>
+            <?php endif; ?>
+
+            <div id="home" class="tab-content active">
+                <h2>Pending Requests Summary</h2>
+                <div class="requests-container">
+                    <?php if(count($pending_requests) > 0): ?>
+                        <?php foreach($pending_requests as $req): ?>
+                            <div class="request-card">
+                                <div class="request-info">
+                                    <strong><?= htmlspecialchars($req['client_name']) ?></strong><br>
+                                    <small><?= htmlspecialchars($req['service_name']) ?></small><br>
+                                    <small><?= date('M d, h:i A', strtotime($req['appointment_date'] . ' ' . $req['appointment_time'])) ?></small>
+                                </div>
+                                <div class="request-actions">
+                                    <form method="POST">
+                                        <input type="hidden" name="appointment_id" value="<?= $req['appointment_id'] ?>">
+                                        <button type="submit" name="status" value="Confirmed" class="btn-action btn-accept">Accept</button>
+                                        <button type="submit" name="status" value="Cancelled" class="btn-action btn-decline">Decline</button>
+                                    </form>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p>No new requests.</p>
+                    <?php endif; ?>
+                </div>
+
+                <div class="schedule-box">
+                    <h2>My Schedule</h2>
+                    <table class="schedule-table">
+                        <thead>
+                            <tr><th>Time</th><th>Appointment</th></tr>
+                        </thead>
+                        <tbody>
+                            <?php 
+                            $home_schedule = array_slice($scheduled_appointments, 0, 5);
+                            if(count($home_schedule) > 0): 
+                                foreach($home_schedule as $appt): ?>
+                                    <tr>
+                                        <td><?= date('D, M d', strtotime($appt['appointment_date'])) ?><br><small><?= date('h:i A', strtotime($appt['appointment_time'])) ?></small></td>
+                                        <td><div class="appt-block"><?= htmlspecialchars($appt['client_name']) ?> - <?= htmlspecialchars($appt['service_name']) ?></div></td>
+                                    </tr>
+                                <?php endforeach; 
+                            else: ?>
+                                <tr><td colspan="2">No confirmed appointments yet.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="perf-box">
+                    <strong>Weekly Performance (Approved)</strong>
+                    <div class="graph-container">
+                        <?php foreach($chart_data as $day => $count): 
+                            $height = ($max_appts > 0) ? ($count / $max_appts) * 100 : 0;
+                        ?>
+                            <div class="bar-wrapper" title="<?= $count ?> Appointments">
+                                <div class="graph-bar" style="height: <?= max($height, 5) ?>%; background: <?= $count > 0 ? '#4caf50' : '#ddd' ?>;"></div>
+                                <span style="font-size:10px;"><?= $day ?></span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+
+            <div id="schedule" class="tab-content">
+                <h2>All Scheduled Appointments</h2>
+                <div class="schedule-box">
+                    <table class="schedule-table">
+                        <thead>
+                            <tr><th>Date/Time</th><th>Client & Service</th><th>Contact</th></tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach($scheduled_appointments as $appt): ?>
+                                <tr>
+                                    <td><strong><?= date('M d', strtotime($appt['appointment_date'])) ?></strong><br><?= date('h:i A', strtotime($appt['appointment_time'])) ?></td>
+                                    <td><?= htmlspecialchars($appt['client_name']) ?> (<?= htmlspecialchars($appt['service_name']) ?>)</td>
+                                    <td>📞 <?= htmlspecialchars($appt['phone']) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="requests" class="tab-content">
+                <h2>All Pending Requests Log</h2>
+                <div class="schedule-box">
+                    <?php if(count($pending_requests) > 0): ?>
+                        <table class="schedule-table">
+                            <thead>
+                                <tr>
+                                    <th>Client & Service</th>
+                                    <th>Requested For</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach($pending_requests as $req): ?>
+                                    <tr>
+                                        <td>
+                                            <strong><?= htmlspecialchars($req['client_name']) ?></strong><br>
+                                            <small><?= htmlspecialchars($req['service_name']) ?></small>
+                                        </td>
+                                        <td>
+                                            <?= date('M d, Y', strtotime($req['appointment_date'])) ?><br>
+                                            <small><?= date('h:i A', strtotime($req['appointment_time'])) ?></small>
+                                        </td>
+                                        <td>
+                                            <form method="POST" style="display:flex; gap:5px;">
+                                                <input type="hidden" name="appointment_id" value="<?= $req['appointment_id'] ?>">
+                                                <button type="submit" name="status" value="Confirmed" class="btn-action btn-accept" style="width:auto; padding: 5px 10px;">Accept</button>
+                                                <button type="submit" name="status" value="Cancelled" class="btn-action btn-decline" style="width:auto; padding: 5px 10px;">Decline</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php else: ?>
+                        <p style="padding: 20px;">No pending requests found.</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div id="clients" class="tab-content">
+                <h2>My Clients</h2>
+                <div class="schedule-box">
+                    <table class="schedule-table">
+                        <thead>
+                            <tr><th>Name</th><th>Phone Number</th></tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach($clients as $c): ?>
+                                <tr>
+                                    <td><strong><?= htmlspecialchars($c['full_name']) ?></strong></td>
+                                    <td><?= htmlspecialchars($c['phone']) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            // Fixed the active class trigger for the sidebar
+            event.currentTarget.classList.add('active');
+        }
+    </script>
+</body>
+</html>

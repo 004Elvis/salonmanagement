@@ -1,0 +1,16 @@
+# Database configuration (Sensitive Info)
+config/db.php
+
+# Third-party libraries
+PHPMailer/
+
+# Database dumps
+*.sql
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE settings
+.vscode/
+.idea/
