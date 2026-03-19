@@ -3,6 +3,23 @@
 
 // 1. Include Database Connection
 require '../config/db.php';
+require '../../includes/logger.php';
+logApiRequest($pdo, 'register_action.php');
+
+// --- START OF API TRACKING UPDATE ---
+try {
+    $endpoint_name = 'register_action.php';
+    // User is not logged in yet, so we log as Guest
+    $log_user_id = null;
+    $log_user_role = 'Guest';
+
+    $log_stmt = $pdo->prepare("INSERT INTO api_logs (endpoint_name, user_id, user_role) VALUES (?, ?, ?)");
+    $log_stmt->execute([$endpoint_name, $log_user_id, $log_user_role]);
+    $current_log_id = $pdo->lastInsertId(); // Save this to update it if registration succeeds
+} catch (Exception $e) {
+    // Logging failure should not prevent registration
+}
+// --- END OF API TRACKING UPDATE ---
 
 // 2. Check if the form was submitted via POST
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -63,6 +80,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $question_id, 
             $security_answer_hash
         ]);
+
+        // --- SECONDARY UPDATE: Link the new user ID to the log ---
+        try {
+            $new_user_id = $pdo->lastInsertId();
+            $update_log = $pdo->prepare("UPDATE api_logs SET user_id = ?, user_role = 'Customer' WHERE id = ?");
+            $update_log->execute([$new_user_id, $current_log_id]);
+        } catch (Exception $e) { }
+        // --- END OF SECONDARY UPDATE ---
 
         // 8. Success Redirect
         header("Location: ../index.php?success=Account created successfully! Please login.");

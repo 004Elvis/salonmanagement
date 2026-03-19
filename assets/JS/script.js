@@ -5,23 +5,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleBtn = document.getElementById('theme-toggle');
     const body = document.body;
     
-    // Check local storage for theme preference
-    if(localStorage.getItem('theme') === 'dark') {
-        body.setAttribute('data-theme', 'dark');
-        if(toggleBtn) toggleBtn.textContent = '☀️ Light Mode';
-    }
+    // Function to apply theme
+    const applyTheme = (theme) => {
+        if (theme === 'dark') {
+            body.setAttribute('data-theme', 'dark');
+            body.classList.add('dark-mode');
+            if(toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-sun"></i> Light Mode';
+        } else {
+            body.setAttribute('data-theme', 'light');
+            body.classList.remove('dark-mode');
+            if(toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-moon"></i> Dark Mode';
+        }
+    };
+
+    // Check local storage (Matches 'theme' key used in dash)
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    applyTheme(savedTheme);
 
     if(toggleBtn) {
         toggleBtn.addEventListener('click', () => {
-            if (body.getAttribute('data-theme') === 'dark') {
-                body.setAttribute('data-theme', 'light');
-                localStorage.setItem('theme', 'light');
-                toggleBtn.textContent = '🌙 Dark Mode';
-            } else {
-                body.setAttribute('data-theme', 'dark');
-                localStorage.setItem('theme', 'dark');
-                toggleBtn.textContent = '☀️ Light Mode';
-            }
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            localStorage.setItem('theme', newTheme);
+            // Also sync to customer/admin keys just in case
+            localStorage.setItem('customer-theme', newTheme);
+            localStorage.setItem('admin-theme', newTheme);
+            
+            applyTheme(newTheme);
         });
     }
 
@@ -30,22 +41,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     toggleIcons.forEach(icon => {
         icon.addEventListener('click', function() {
-            // Get the input field. 
-            // We assume HTML is: <input> followed immediately by <i class="toggle-password">
-            const input = this.previousElementSibling;
+            // Find the input within the same wrapper
+            const input = this.closest('.password-wrapper').querySelector('input');
             
-            if (input && input.tagName === 'INPUT') {
+            if (input) {
                 if (input.type === "password") {
                     input.type = "text";
                     this.classList.remove('fa-eye');
-                    this.classList.add('fa-eye-slash'); // Switch to "crossed out eye"
+                    this.classList.add('fa-eye-slash');
                 } else {
                     input.type = "password";
                     this.classList.remove('fa-eye-slash');
-                    this.classList.add('fa-eye'); // Switch back to "normal eye"
+                    this.classList.add('fa-eye');
                 }
-            } else {
-                console.error("Password toggle error: Input field not found before icon.");
             }
         });
     });

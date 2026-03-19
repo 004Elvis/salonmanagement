@@ -18,26 +18,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_staff'])) {
     $email = trim($_POST['email']);
     $phone = trim($_POST['phone']);
     $password = $_POST['password'];
-    $role_id = 2; // 2 represents Staff in your database
+    $role_id = 2; // Staff
 
-    // Hash the password for security
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
     try {
-        // Updated column names to match your database: password_hash, role_id
         $stmt = $pdo->prepare("INSERT INTO users (full_name, email, phone, password_hash, role_id) VALUES (?, ?, ?, ?, ?)");
         $stmt->execute([$full_name, $email, $phone, $hashed_password, $role_id]);
-        $message = "<div style='color: green; padding: 10px; margin-bottom: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px;'>Staff member added successfully!</div>";
+        $message = "<div class='alert alert-success'>Staff member added successfully!</div>";
     } catch (PDOException $e) {
-        $message = "<div style='color: red; padding: 10px; margin-bottom: 15px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px;'>Error adding staff: " . $e->getMessage() . "</div>";
+        $message = "<div class='alert alert-danger'>Error adding staff: " . $e->getMessage() . "</div>";
     }
 }
 
 // --- FETCH ALL STAFF MEMBERS ---
-// Updated to check for role_id = 2 instead of role = 'Staff'
 $stmt_staff = $pdo->query("SELECT user_id, full_name, email, phone FROM users WHERE role_id = 2 ORDER BY full_name ASC");
 $staff_members = $stmt_staff->fetchAll(PDO::FETCH_ASSOC);
-
 ?>
 
 <!DOCTYPE html>
@@ -48,76 +44,102 @@ $staff_members = $stmt_staff->fetchAll(PDO::FETCH_ASSOC);
     <title>Staff Management - Admin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Shared Styles */
-        :root { --sidebar-bg: #f8f9fa; --content-bg: #ffffff; --text-dark: #333; --text-light: #6c757d; --border-color: #dee2e6; --danger-color: #dc3545; --danger-bg: #f8d7da; --primary-color: #0d6efd; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { display: flex; height: 100vh; overflow: hidden; background-color: #f4f6f9; }
-        
-        /* Sidebar & Header */
-        .sidebar { width: 250px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
-        .brand { font-size: 1.2rem; font-weight: bold; padding: 25px 20px; color: var(--text-dark); border-bottom: 1px solid var(--border-color); margin-bottom: 15px; }
-        .nav-links { padding: 0 15px; }
-        .menu-item { display: flex; align-items: center; padding: 12px 15px; text-decoration: none; color: var(--text-dark); border-radius: 6px; margin-bottom: 5px; font-size: 0.95rem; }
-        .menu-item:hover { background-color: #e9ecef; }
-        .menu-item.active { background-color: #e2e3e5; font-weight: 600; }
-        .menu-item i { margin-right: 15px; width: 20px; text-align: center; color: var(--text-light); }
-        .menu-item.active i { color: var(--text-dark); }
-        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: #fff; border-bottom: 1px solid var(--border-color); }
-        .header h2 { font-size: 1.4rem; color: var(--text-dark); }
-        .logout-btn { padding: 8px 16px; border: 1px solid var(--border-color); background: #fff; cursor: pointer; border-radius: 4px; font-weight: 500; text-decoration: none; color: var(--text-dark); }
-        .profile-img-container { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; background: #ccc; border: 1px solid #aaa; }
-        .profile-img-container img { width: 100%; height: 100%; object-fit: cover; }
-        
-        /* Page Specific Styles */
-        .dashboard-padding { padding: 30px; }
-        .card { background: #fff; border: 1px solid var(--border-color); border-radius: 8px; padding: 25px; }
-        
-        /* Actions Bar */
-        .actions-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .btn-add { padding: 10px 20px; background-color: var(--primary-color); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.95rem; }
-        .btn-add:hover { background-color: #0b5ed7; }
-        
-        /* Table */
-        table { width: 100%; border-collapse: collapse; }
-        th, td { text-align: left; padding: 12px 15px; border-bottom: 1px solid var(--border-color); font-size: 0.95rem; }
-        th { color: var(--text-light); font-weight: 600; border-bottom: 2px solid var(--border-color); }
-        .btn-delete { padding: 6px 12px; background-color: var(--danger-bg); color: var(--danger-color); border: 1px solid var(--danger-color); border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
-        .btn-delete:hover { background-color: var(--danger-color); color: #fff; }
+        :root {
+            --sidebar-bg: #f8f9fa;
+            --main-bg: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-muted: #6c757d;
+            --border-color: #dee2e6;
+            --accent: #4caf50;
+            --danger: #dc3545;
+            --primary: #0d6efd;
+        }
 
-        /* Modal Styles */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
-        .modal-content { background-color: #fff; padding: 30px; border-radius: 8px; width: 400px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .modal-header h3 { margin: 0; color: var(--text-dark); }
-        .close-btn { font-size: 1.5rem; cursor: pointer; color: var(--text-light); border: none; background: none; }
+        body.dark-mode {
+            --sidebar-bg: #1a1d20;
+            --main-bg: #121416;
+            --card-bg: #212529;
+            --text-main: #f8f9fa;
+            --text-muted: #adb5bd;
+            --border-color: #373b3e;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; transition: background 0.3s, color 0.3s; }
+        body { display: flex; height: 100vh; background-color: var(--main-bg); color: var(--text-main); overflow: hidden; }
+
+        /* Sidebar */
+        .sidebar { width: 250px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; flex-shrink: 0; }
+        .brand { font-size: 1.2rem; font-weight: bold; padding: 25px; border-bottom: 1px solid var(--border-color); }
+        .nav-links { padding: 15px; }
+        .menu-item { display: flex; align-items: center; padding: 12px 15px; text-decoration: none; color: var(--text-main); border-radius: 6px; margin-bottom: 5px; font-size: 0.95rem; }
+        .menu-item:hover, .menu-item.active { background: rgba(76, 175, 80, 0.1); color: var(--accent); font-weight: 600; }
+        .menu-item i { margin-right: 15px; width: 20px; text-align: center; color: var(--text-muted); }
+
+        /* Main Content */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--card-bg); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; }
+        
+        .dashboard-padding { padding: 25px; }
+        .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        /* UI Elements */
+        .actions-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; flex-wrap: wrap; }
+        .btn-add { padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-logout { padding: 8px 16px; border: 1px solid var(--border-color); background: var(--card-bg); border-radius: 4px; text-decoration: none; color: var(--text-main); font-size: 14px; }
+
+        /* Responsive Table */
+        .table-responsive { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 500px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.95rem; }
+        th { color: var(--text-muted); font-weight: 600; }
+        .btn-delete { color: var(--danger); border: 1px solid var(--danger); background: transparent; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+
+        /* Alerts */
+        .alert { padding: 12px; border-radius: 5px; margin-bottom: 20px; font-size: 0.9rem; }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 15px; }
+        .modal-content { background: var(--card-bg); padding: 25px; border-radius: 8px; width: 100%; max-width: 450px; color: var(--text-main); }
         .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; color: var(--text-dark); font-weight: 500; font-size: 0.9rem;}
-        .form-group input { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.95rem; }
-        .submit-btn { width: 100%; padding: 10px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 1rem; margin-top: 10px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.9rem; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-color); color: var(--text-main); }
+        .submit-btn { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        /* Mobile Breakpoints */
+        @media (max-width: 768px) {
+            .sidebar { width: 70px; }
+            .brand, .menu-item span { display: none; }
+            .menu-item i { margin-right: 0; font-size: 1.2rem; }
+            .header { padding: 10px 15px; }
+            .header h2 { font-size: 1rem; }
+            .dashboard-padding { padding: 15px; }
+        }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
-        <div class="brand">Admin Dashboard</div>
+        <div class="brand">✨ Admin</div>
         <div class="nav-links">
-            <a href="admin_dashboard.php" class="menu-item"><i class="fas fa-home"></i> Home</a>
-            <a href="admin_appointments.php" class="menu-item"><i class="far fa-calendar-alt"></i> All Appointments</a>
-            <a href="admin_financials.php" class="menu-item"><i class="fas fa-chart-line"></i> Financials</a>
-            <a href="admin_staff.php" class="menu-item active"><i class="fas fa-user-tie"></i> Staff</a>
-            <a href="admin_clients.php" class="menu-item"><i class="fas fa-users"></i> Clients</a>
-            <a href="admin_settings.php" class="menu-item"><i class="fas fa-cog"></i> Settings</a>
+            <a href="admin_dashboard.php" class="menu-item"><i class="fas fa-home"></i> <span>Home</span></a>
+            <a href="admin_appointments.php" class="menu-item"><i class="far fa-calendar-alt"></i> <span>Appointments</span></a>
+            <a href="admin_financials.php" class="menu-item"><i class="fas fa-chart-line"></i> <span>Financials</span></a>
+            <a href="admin_staff.php" class="menu-item active"><i class="fas fa-user-tie"></i> <span>Staff</span></a>
+            <a href="admin_clients.php" class="menu-item"><i class="fas fa-users"></i> <span>Clients</span></a>
+            <a href="admin_settings.php" class="menu-item"><i class="fas fa-cog"></i> <span>Settings</span></a>
         </div>
     </div>
 
     <div class="main-content">
         <div class="header">
             <h2>Staff Management</h2>
-            <div class="header-actions" style="display:flex; gap:20px; align-items:center;">
-                <a href="../logout.php" class="logout-btn">Logout</a>
-                <div class="profile-img-container">
-                    <img src="<?php echo htmlspecialchars($admin_image); ?>" alt="Admin">
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <a href="../logout.php" class="btn-logout">Logout</a>
+                <div style="width: 35px; height: 35px; border-radius: 50%; overflow: hidden; border: 2px solid var(--accent);">
+                    <img src="<?php echo htmlspecialchars($admin_image); ?>" alt="Admin" style="width: 100%; height: 100%; object-fit: cover;">
                 </div>
             </div>
         </div>
@@ -127,45 +149,49 @@ $staff_members = $stmt_staff->fetchAll(PDO::FETCH_ASSOC);
 
             <div class="card">
                 <div class="actions-bar">
-                    <h3>Registered Staff</h3>
-                    <button class="btn-add" onclick="openModal()">+ Add New Staff</button>
+                    <h3>Registered Beauticians</h3>
+                    <button class="btn-add" onclick="openModal()"><i class="fas fa-plus"></i> Add Staff</button>
                 </div>
 
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (count($staff_members) > 0): ?>
-                            <?php foreach ($staff_members as $staff): ?>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
                             <tr>
-                                <td><?php echo htmlspecialchars($staff['full_name']); ?></td>
-                                <td><?php echo htmlspecialchars($staff['email']); ?></td>
-                                <td><?php echo htmlspecialchars($staff['phone']); ?></td>
-                                <td>
-                                    <button class="btn-delete" onclick="deleteStaff(<?php echo $staff['user_id']; ?>, '<?php echo addslashes($staff['full_name']); ?>')"><i class="fas fa-trash"></i> Delete</button>
-                                </td>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Action</th>
                             </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr><td colspan="4">No staff members found.</td></tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            <?php if (count($staff_members) > 0): ?>
+                                <?php foreach ($staff_members as $staff): ?>
+                                <tr>
+                                    <td><strong><?php echo htmlspecialchars($staff['full_name']); ?></strong></td>
+                                    <td><?php echo htmlspecialchars($staff['email']); ?></td>
+                                    <td><?php echo htmlspecialchars($staff['phone']); ?></td>
+                                    <td>
+                                        <button class="btn-delete" onclick="deleteStaff(<?php echo $staff['user_id']; ?>, '<?php echo addslashes($staff['full_name']); ?>')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr><td colspan="4">No staff members found.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
     <div id="addStaffModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h3>Add New Staff Member</h3>
-                <button class="close-btn" onclick="closeModal()">&times;</button>
+                <span onclick="closeModal()" style="cursor:pointer; font-size: 1.5rem; color: var(--text-muted);">&times;</span>
             </div>
             <form method="POST" action="admin_staff.php">
                 <div class="form-group">
@@ -184,27 +210,26 @@ $staff_members = $stmt_staff->fetchAll(PDO::FETCH_ASSOC);
                     <label>Temporary Password</label>
                     <input type="password" name="password" value="password" required>
                 </div>
-                <button type="submit" name="add_staff" class="submit-btn">Save Staff Member</button>
+                <button type="submit" name="add_staff" class="submit-btn">Save Member</button>
             </form>
         </div>
     </div>
 
     <script>
+        // Global Theme Check
+        if (localStorage.getItem('admin-theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+
         // Modal Logic
         const modal = document.getElementById('addStaffModal');
         function openModal() { modal.style.display = 'flex'; }
         function closeModal() { modal.style.display = 'none'; }
-        
-        // Close modal if user clicks outside of the box
-        window.onclick = function(event) {
-            if (event.target == modal) {
-                closeModal();
-            }
-        }
+        window.onclick = function(e) { if (e.target == modal) closeModal(); }
 
         // Delete Logic
         function deleteStaff(userId, staffName) {
-            if (confirm("Are you sure you want to completely remove " + staffName + " from the system?")) {
+            if (confirm("Are you sure you want to remove " + staffName + " from the system?")) {
                 fetch('../api/delete_user.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -213,13 +238,11 @@ $staff_members = $stmt_staff->fetchAll(PDO::FETCH_ASSOC);
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        alert("Staff member removed successfully.");
                         location.reload(); 
                     } else {
                         alert("Error: " + data.message);
                     }
-                })
-                .catch(error => console.error('Error:', error));
+                });
             }
         }
     </script>

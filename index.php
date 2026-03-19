@@ -10,7 +10,7 @@
     
     <style>
         .hero-section {
-            background-image: url('assets/images/salon-bg.jpg'); 
+            background-image: url('assets/images/salon-bg.jpg.jpg'); 
             background-size: cover;
             background-position: center;
             height: 100vh;
@@ -79,29 +79,31 @@
             font-size: 0.95rem;
             font-weight: 500;
             padding: 10px 0;
+            cursor: pointer;
         }
 
-        .nav-links a:hover {
-            opacity: 0.8;
-        }
-
-        /* --- Dropdown CSS --- */
+        /* --- Updated Dropdown CSS --- */
         .dropdown {
             position: relative;
             display: inline-block;
         }
 
         .dropdown-content {
-            display: none;
+            display: none; /* Hidden by default - toggled by JS */
             position: absolute;
-            background-color: rgba(0, 0, 0, 0.85); 
-            min-width: 320px; /* Widened slightly to accomodate longer text */
+            background-color: rgba(0, 0, 0, 0.95); 
+            min-width: 320px;
             box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
             z-index: 10;
             border-radius: 4px;
             top: 100%;
             left: 0;
             padding: 10px 0;
+        }
+
+        /* Logic for showing the dropdown */
+        .dropdown-content.active {
+            display: block;
         }
 
         .dropdown-content a {
@@ -114,21 +116,24 @@
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
         
-        
         .dropdown-content a:last-child {
             border-bottom: none;
         }
 
         .dropdown-content a:hover {
             background-color: rgba(255, 255, 255, 0.1); 
-            opacity: 1;
         }
 
-        .dropdown:hover .dropdown-content {
-            display: block;
+        /* Salon Message Styling */
+        .salon-message-box {
+            padding: 20px;
+            color: #f1f1f1;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            text-align: left;
+            min-width: 350px;
         }
 
-        /* Utility classes for styling the dropdown text */
         .item-title { font-weight: bold; display: block; margin-bottom: 3px; }
         .item-sub { font-size: 0.75rem; color: #ccc; }
         .price-badge { float: right; color: #f0a500; font-weight: bold; }
@@ -180,7 +185,7 @@
                 <ul class="nav-links">
                     
                     <li class="dropdown">
-                        <a href="#">Meet Our Team <i class="fas fa-chevron-down" style="font-size: 0.7em;"></i></a>
+                        <a href="javascript:void(0)" class="drop-btn">Meet Our Team <i class="fas fa-chevron-down" style="font-size: 0.7em;"></i></a>
                         <div class="dropdown-content">
                             <a href="#"><span class="item-title">Achieng Odhiambo</span><span class="item-sub">achiengstaff@gmail.com</span></a>
                             <a href="#"><span class="item-title">Wanjiku Kamau</span><span class="item-sub">wanjikustaff@gmail.com</span></a>
@@ -192,7 +197,7 @@
                     </li>
 
                     <li class="dropdown">
-                        <a href="#">Services <i class="fas fa-chevron-down" style="font-size: 0.7em;"></i></a>
+                        <a href="javascript:void(0)" class="drop-btn">Services <i class="fas fa-chevron-down" style="font-size: 0.7em;"></i></a>
                         <div class="dropdown-content">
                             <a href="#">
                                 <span class="item-title">Full Manicure <span class="price-badge">KES 1500</span></span>
@@ -221,7 +226,18 @@
                         </div>
                     </li>
 
-                    <li><a href="#">The Salon</a></li>
+                    <li class="dropdown">
+                        <a href="javascript:void(0)" class="drop-btn">The Salon <i class="fas fa-chevron-down" style="font-size: 0.7em;"></i></a>
+                        <div class="dropdown-content">
+                            <div class="salon-message-box">
+                                <strong>Welcome to our salon</strong>, where beauty, relaxation, and confidence come together.<br><br>
+                                From the moment you walk through our doors, you’re not just a client, you’re part of our family. 
+                                We’re here to give you more than just a service; we’re here to give you an experience.<br><br>
+                                Whether you’re looking for a fresh new look, a touch of elegance, or simply a moment to unwind, our skilled team is dedicated to making you feel your absolute best.<br><br>
+                                Sit back, relax, and let us take care of you. Your beauty is our passion, and your satisfaction is our priority. We can’t wait to welcome you!
+                            </div>
+                        </div>
+                    </li>
                     
                     <li><a href="login.php" class="login-link">Sign In / Book</a></li> 
                 </ul>
@@ -238,5 +254,39 @@
     </div>
 
     <script src="assets/js/script.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropButtons = document.querySelectorAll('.drop-btn');
+
+            dropButtons.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const currentDropdown = this.nextElementSibling;
+
+                    // Close any other open dropdowns first
+                    document.querySelectorAll('.dropdown-content').forEach(content => {
+                        if (content !== currentDropdown) {
+                            content.classList.remove('active');
+                        }
+                    });
+
+                    // Toggle the clicked one
+                    currentDropdown.classList.toggle('active');
+                });
+            });
+
+            // Close dropdowns if user clicks anywhere else on the page
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.dropdown')) {
+                    document.querySelectorAll('.dropdown-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                }
+            });
+        });
+    </script>
 </body>
 </html>

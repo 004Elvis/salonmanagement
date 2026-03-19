@@ -7,28 +7,29 @@
     --bg-color: #f4f7f6;
     --text-color: #333;
     --card-bg: rgba(255, 255, 255, 0.95); /* Semi-transparent for glass effect */
-    --primary: #d4af37; /* Gold */
-    --primary-hover: #b5952f;
+    --primary: #4caf50; /* Changed to match your Salon Green Accent */
+    --primary-hover: #43a047;
     --secondary: #2c3e50; /* Dark Blue */
     --input-bg: #ffffff;
     --input-border: #ddd;
     --placeholder-color: #999;
 }
 
+/* Match the data-theme attribute used in your JS */
+body.dark-mode,
 [data-theme="dark"] {
-    --bg-color: #1a1a1a;
-    --text-color: #f4f7f6;
-    --card-bg: rgba(45, 45, 45, 0.95);
-    --input-bg: #2b2b2b; /* Darker background for inputs */
-    --input-border: #555;
+    --bg-color: #121416; /* Matches Dashboard background */
+    --text-color: #f8f9fa;
+    --card-bg: rgba(33, 37, 41, 0.95);
+    --input-bg: #2b2b2b; 
+    --input-border: #373b3e;
     --secondary: #ecf0f1;
-    --placeholder-color: #bbb; /* Lighter gray for dark mode */
+    --placeholder-color: #bbb;
 }
 
 body {
     background-color: var(--bg-color);
-    /* Add a background image for the landing page feel */
-    background-image: url('../images/salon-bg.jpg'); 
+    background-image: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)), url('../images/salon-bg.jpg'); 
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -47,21 +48,21 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-grow: 1; /* Pushes footer down */
+    flex-grow: 1; 
     padding: 20px;
 }
 
 .login-card,
 .register-card {
     background: var(--card-bg);
-    backdrop-filter: blur(10px); /* Frosted glass effect */
+    backdrop-filter: blur(10px); 
     padding: 40px;
     border-radius: 15px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.2);
     width: 100%;
     max-width: 400px;
     text-align: center;
-    transition: background 0.3s ease;
+    transition: transform 0.3s ease, background 0.3s ease;
 }
 
 /* Typography */
@@ -70,38 +71,36 @@ p { font-size: 0.9rem; color: var(--text-color); opacity: 0.8; }
 
 /* Form Elements */
 .form-group { margin-bottom: 20px; text-align: left; }
-label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; color: var(--text-color); }
+label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; color: var(--text-color); }
 
 input, select {
     width: 100%;
     padding: 12px;
     border: 1px solid var(--input-border);
     border-radius: 8px;
-    box-sizing: border-box; /* Ensures padding doesn't widen element */
+    box-sizing: border-box; 
     font-family: inherit;
-    background: transparent; /* Default to transparent to pick up card color */
+    background: var(--input-bg);
     color: var(--text-color);
-    transition: border-color 0.3s, color 0.3s;
+    transition: border-color 0.3s, box-shadow 0.3s;
 }
 
-/* --- IMPORTANT: Fix for Dark Mode Inputs & Dropdowns --- */
-[data-theme="dark"] input, 
-[data-theme="dark"] select {
-    background-color: var(--input-bg); /* Force a dark background */
-    color: #fff; /* Force white text */
-    border-color: #555;
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
 }
 
-/* Fix for the actual dropdown menu items */
-[data-theme="dark"] option {
-    background-color: #2b2b2b;
-    color: #fff;
+/* Dropdown menu items fix */
+option {
+    background-color: var(--card-bg);
+    color: var(--text-color);
 }
 
 /* Placeholder Text Color */
 ::placeholder {
     color: var(--placeholder-color);
-    opacity: 1; /* Firefox fix */
+    opacity: 1; 
 }
 
 /* Password Wrapper for Eye Icon */
@@ -111,7 +110,7 @@ input, select {
 }
 
 .password-wrapper input {
-    padding-right: 40px; /* Make space for the eye icon */
+    padding-right: 45px; 
 }
 
 .password-wrapper .toggle-password {
@@ -120,41 +119,51 @@ input, select {
     top: 50%;
     transform: translateY(-50%);
     cursor: pointer;
-    color: #888;
-    z-index: 10; /* Ensure it sits on top of the input */
+    color: var(--placeholder-color);
+    z-index: 10;
+    font-size: 1.1rem;
 }
 
-/* Make icon lighter in dark mode */
-[data-theme="dark"] .password-wrapper .toggle-password {
-    color: #ccc;
+.password-wrapper .toggle-password:hover {
+    color: var(--primary);
 }
 
 /* Buttons */
 .btn {
-    padding: 12px;
+    padding: 14px;
     border: none;
     cursor: pointer;
     border-radius: 8px;
     font-weight: 600;
     width: 100%;
-    transition: transform 0.2s;
+    transition: all 0.2s ease;
+    font-size: 1rem;
 }
-.btn:hover { transform: translateY(-2px); }
 
 .btn-primary { background-color: var(--primary); color: white; }
-.btn-primary:hover { background-color: var(--primary-hover); }
+.btn-primary:hover { background-color: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3); }
+.btn-primary:active { transform: translateY(0); }
 
 .btn-outline {
     background: transparent;
     border: 2px solid var(--primary);
     color: var(--primary);
-    margin-top: 10px;
+    margin-top: 15px;
     text-decoration: none;
-    display: inline-block; /* Essential for <a> tags acting as buttons */
+    display: inline-block; 
     box-sizing: border-box;
     text-align: center;
 }
 .btn-outline:hover { background: var(--primary); color: white; }
 
 /* Navbar adjustment */
-.navbar { background: var(--card-bg) !important; }
+.navbar { background: var(--card-bg) !important; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+
+/* --- RESPONSIVENESS --- */
+@media (max-width: 480px) {
+    .login-card, .register-card {
+        padding: 25px 20px;
+    }
+    h2 { font-size: 1.5rem; }
+    .btn { padding: 12px; }
+}
