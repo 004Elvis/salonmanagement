@@ -160,7 +160,7 @@ $appointments = $stmt->fetchAll();
             </form>
 
             <a href="book.php" class="btn-book">Book Now</a>
-            <a href="../logout.php" class="btn-logout" title="Logout"><i class="fas fa-sign-out-alt"></i></a>
+            <a href="../logout.php" class="btn-logout" title="Logout" onclick="return confirm('Are you sure you want to exit?');"><i class="fas fa-sign-out-alt"></i></a>
         </div>
     </nav>
 

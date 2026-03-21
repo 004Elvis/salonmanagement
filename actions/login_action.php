@@ -5,7 +5,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require '../config/db.php';
-require '../../includes/logger.php';
+require '../includes/logger.php';
 logApiRequest($pdo, 'login_action.php');
 
 // --- START OF API TRACKING UPDATE ---

@@ -76,7 +76,7 @@ $transactions = $stmt_transactions->fetchAll(PDO::FETCH_ASSOC);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financials - Admin</title>
+    <title>Financials - Elvis Salon</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -89,6 +89,7 @@ $transactions = $stmt_transactions->fetchAll(PDO::FETCH_ASSOC);
             --border-color: #dee2e6;
             --accent: #4caf50;
             --primary: #0d6efd;
+            --danger: #dc3545;
         }
 
         body.dark-mode {
@@ -116,28 +117,29 @@ $transactions = $stmt_transactions->fetchAll(PDO::FETCH_ASSOC);
         .dashboard-padding { padding: 25px; }
         .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-        /* Summary Cards */
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; }
         .summary-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; text-align: center; }
         .summary-card h3 { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px; }
         .summary-card .val { font-size: 1.8rem; font-weight: bold; }
 
-        /* Filter Form */
         .filter-form { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; padding: 15px; margin-bottom: 25px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-color); }
         .form-group { display: flex; flex-direction: column; }
         .form-group label { font-size: 0.8rem; font-weight: 600; margin-bottom: 5px; color: var(--text-muted); }
         .form-group input { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-color); color: var(--text-main); }
         .btn-filter { padding: 8px 20px; background: var(--accent); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        
+        .btn-pdf { padding: 8px 20px; background: var(--danger); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; }
 
-        /* Charts */
         .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; margin-bottom: 25px; }
         .chart-container { position: relative; height: 280px; width: 100%; }
 
-        /* Table */
         .table-responsive { width: 100%; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; min-width: 600px; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; }
         th { color: var(--text-muted); font-weight: 600; }
+
+        /* Hidden Header for Print */
+        .print-only-header { display: none; }
 
         @media (max-width: 768px) {
             .sidebar { width: 70px; }
@@ -147,6 +149,22 @@ $transactions = $stmt_transactions->fetchAll(PDO::FETCH_ASSOC);
             .header h2 { font-size: 1rem; }
             .dashboard-padding { padding: 15px; }
             .filter-form { flex-direction: column; align-items: stretch; }
+        }
+
+        @media print {
+            .sidebar, .filter-form, .header, .nav-links, .noprint { display: none !important; }
+            .main-content { overflow: visible !important; width: 100%; }
+            body { background: white !important; color: black !important; }
+            .card { box-shadow: none !important; border: 1px solid #eee !important; page-break-inside: avoid; }
+            .dashboard-padding { padding: 0; }
+            .print-only-header { 
+                display: block !important; 
+                text-align: center; 
+                margin-bottom: 30px; 
+                border-bottom: 2px solid var(--accent);
+                padding-bottom: 15px;
+            }
+            canvas { max-width: 100% !important; height: auto !important; }
         }
     </style>
 </head>
@@ -165,7 +183,14 @@ $transactions = $stmt_transactions->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
     <div class="main-content">
-        <div class="header">
+        <div class="print-only-header">
+            <h1 style="color: var(--accent);">Elvis Midega Beauty Salon</h1>
+            <h2>Financial Report Summary</h2>
+            <p><strong>Period:</strong> <?= date('M d, Y', strtotime($start_date)) ?> to <?= date('M d, Y', strtotime($end_date)) ?></p>
+            <p style="font-size: 0.8rem; color: #666;">Generated on: <?= date('F d, Y h:i A') ?></p>
+        </div>
+
+        <div class="header noprint">
             <h2>Financial Reports</h2>
             <div style="display: flex; gap: 15px; align-items: center;">
                 <a href="../logout.php" style="text-decoration:none; color:var(--text-main); font-size:14px; border:1px solid var(--border-color); padding:5px 10px; border-radius:4px;">Logout</a>
@@ -175,17 +200,22 @@ $transactions = $stmt_transactions->fetchAll(PDO::FETCH_ASSOC);
 
         <div class="dashboard-padding">
             
-            <form method="GET" action="admin_financials.php" class="filter-form">
-                <div class="form-group">
-                    <label>Start Date</label>
-                    <input type="date" name="start_date" value="<?= htmlspecialchars($start_date) ?>" required>
-                </div>
-                <div class="form-group">
-                    <label>End Date</label>
-                    <input type="date" name="end_date" value="<?= htmlspecialchars($end_date) ?>" required>
-                </div>
-                <button type="submit" class="btn-filter">Generate Report</button>
-            </form>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px; margin-bottom: 25px;">
+                <form method="GET" action="admin_financials.php" class="filter-form" style="margin-bottom: 0; flex: 1;">
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" name="start_date" value="<?= htmlspecialchars($start_date) ?>" required>
+                    </div>
+                    <div class="form-group">
+                        <label>End Date</label>
+                        <input type="date" name="end_date" value="<?= htmlspecialchars($end_date) ?>" required>
+                    </div>
+                    <button type="submit" class="btn-filter">Generate Report</button>
+                    <button type="button" onclick="window.print()" class="btn-pdf">
+                        <i class="fas fa-file-pdf"></i> Download PDF
+                    </button>
+                </form>
+            </div>
 
             <div class="summary-grid">
                 <div class="summary-card">
@@ -244,14 +274,12 @@ $transactions = $stmt_transactions->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
     <script>
-        // Apply Global Theme
         const savedTheme = localStorage.getItem('admin-theme');
         const isDark = savedTheme === 'dark';
         if (isDark) document.body.classList.add('dark-mode');
 
         const labelColor = isDark ? '#adb5bd' : '#6c757d';
 
-        // 1. Trend Line Chart
         const trendChart = new Chart(document.getElementById('trendChart').getContext('2d'), {
             type: 'line',
             data: {
@@ -275,7 +303,6 @@ $transactions = $stmt_transactions->fetchAll(PDO::FETCH_ASSOC);
             }
         });
 
-        // 2. Service Doughnut Chart
         new Chart(document.getElementById('serviceChart').getContext('2d'), {
             type: 'doughnut',
             data: {

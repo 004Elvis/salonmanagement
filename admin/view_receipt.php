@@ -1,7 +1,11 @@
 <?php
 // admin/view_receipt.php
 require '../config/db.php';
-session_start();
+
+// Safe session start to prevent "Notice" error
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Check if Admin
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
@@ -16,9 +20,9 @@ if (!isset($_GET['id'])) {
 
 $appointment_id = $_GET['id'];
 
-// Fetch detailed info
+// Fetch detailed info - Added customer_email for automated emailing
 $stmt = $pdo->prepare("
-    SELECT a.*, s.service_name, s.price_kes, u.full_name AS beautician_name, cust.full_name AS customer_name
+    SELECT a.*, s.service_name, s.price_kes, u.full_name AS beautician_name, cust.full_name AS customer_name, cust.email AS customer_email
     FROM appointments a
     JOIN services s ON a.service_id = s.service_id
     JOIN users u ON a.staff_id = u.user_id
@@ -52,7 +56,7 @@ if (!$receipt) {
         body.dark-mode {
             --bg-color: #121416;
             --text-main: #f8f9fa;
-            --card-bg: #212529; /* Background for the page in dark mode */
+            --card-bg: #212529;
             --border-color: #373b3e;
         }
 
@@ -72,8 +76,8 @@ if (!$receipt) {
         .receipt-card { 
             width: 100%;
             max-width: 500px; 
-            background: #fff; /* Keep receipt white like paper */
-            color: #333; /* Keep receipt text dark like ink */
+            background: #fff; 
+            color: #333; 
             padding: 40px; 
             border: 1px solid #ccc; 
             position: relative; 
@@ -110,6 +114,7 @@ if (!$receipt) {
             display: flex; 
             gap: 10px; 
             justify-content: center; 
+            flex-wrap: wrap;
         }
 
         .btn {
@@ -121,13 +126,17 @@ if (!$receipt) {
             font-size: 14px;
             cursor: pointer;
             border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .btn-print { background: var(--accent); color: white; }
+        .btn-pdf { background: #e67e22; color: white; }
         .btn-back { background: #6c757d; color: white; }
 
         @media print { 
-            .no-print { display: none; } 
+            .no-print { display: none !important; } 
             body { background: #fff; padding: 0; } 
             .receipt-card { border: none; box-shadow: none; margin: 0; max-width: 100%; } 
         }
@@ -169,6 +178,11 @@ if (!$receipt) {
 
     <div class="btn-container no-print">
         <button onclick="window.print()" class="btn btn-print"><i class="fas fa-print"></i> Print Receipt</button>
+        
+        <a href="../actions/download_receipt.php?id=<?php echo $appointment_id; ?>" class="btn btn-pdf">
+            <i class="fas fa-file-pdf"></i> Download PDF
+        </a>
+
         <a href="admin_appointments.php" class="btn btn-back">Back to List</a>
     </div>
 </div>

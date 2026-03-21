@@ -34,21 +34,39 @@ $stmt->execute([$admin_id]);
 $admin = $stmt->fetch();
 $admin_image = !empty($admin['profile_picture']) ? '../uploads/' . htmlspecialchars($admin['profile_picture']) : '../assets/images/default_profile.png';
 
-// --- DATA FETCHING FOR CHARTS ---
+// --- SALON METRICS DATA FETCHING ---
 
-// 1. Revenue Trend (Last 7 Days)
+// 1. New Customers Growth (Updated with role_id = 3)
+$stmt_cust = $pdo->query("SELECT COUNT(*) FROM users WHERE role_id = 3 AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())");
+$new_customers_count = $stmt_cust->fetchColumn();
+
+// 2. Weekly Comparison (This Week vs Last Week)
+$this_week_sql = "SELECT DATE_FORMAT(appointment_date, '%a') as day, COUNT(*) as count FROM appointments WHERE appointment_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND status != 'Cancelled' GROUP BY day";
+$last_week_sql = "SELECT DATE_FORMAT(appointment_date, '%a') as day, COUNT(*) as count FROM appointments WHERE appointment_date >= DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND appointment_date < DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND status != 'Cancelled' GROUP BY day";
+
+$this_week_data = $pdo->query($this_week_sql)->fetchAll(PDO::FETCH_KEY_PAIR);
+$last_week_data = $pdo->query($last_week_sql)->fetchAll(PDO::FETCH_KEY_PAIR);
+
+$days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+$this_week_final = []; $last_week_final = [];
+foreach($days as $day) {
+    $this_week_final[] = $this_week_data[$day] ?? 0;
+    $last_week_final[] = $last_week_data[$day] ?? 0;
+}
+
+// 3. Revenue Trend (Existing)
 $stmt_rev = $pdo->query("SELECT DATE_FORMAT(appointment_date, '%b %d') as label, SUM(s.price_kes) as total FROM appointments a JOIN services s ON a.service_id = s.service_id WHERE a.status = 'Completed' AND a.appointment_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) GROUP BY a.appointment_date ORDER BY a.appointment_date ASC");
 $revenue_trend = $stmt_rev->fetchAll(PDO::FETCH_ASSOC);
 
-// 2. Service Split
+// 4. Service Split (Pie/Doughnut)
 $stmt_svc = $pdo->query("SELECT s.service_name as label, COUNT(*) as value FROM appointments a JOIN services s ON a.service_id = s.service_id WHERE a.status = 'Completed' GROUP BY s.service_name");
 $service_split = $stmt_svc->fetchAll(PDO::FETCH_ASSOC);
 
-// 3. Staff Performance
+// 5. Staff Performance
 $stmt_staff = $pdo->query("SELECT u.full_name as label, COUNT(*) as value FROM appointments a JOIN users u ON a.staff_id = u.user_id WHERE a.status = 'Completed' GROUP BY u.user_id");
 $staff_perf = $stmt_staff->fetchAll(PDO::FETCH_ASSOC);
 
-// 4. Full Recent Appointments (Back to original logic)
+// 6. Recent Appointments
 $sql_appointments = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, a.status, u.full_name as client_name, s.full_name as staff_name, sv.service_name FROM appointments a JOIN users u ON a.customer_id = u.user_id JOIN users s ON a.staff_id = s.user_id JOIN services sv ON a.service_id = sv.service_id WHERE a.status != 'Cancelled' ORDER BY a.appointment_date DESC LIMIT 5";
 $recent_appointments = $pdo->query($sql_appointments)->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -91,7 +109,6 @@ $recent_appointments = $pdo->query($sql_appointments)->fetchAll(PDO::FETCH_ASSOC
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; transition: background 0.2s, color 0.2s; }
         body { display: flex; min-height: 100vh; background-color: var(--main-bg); color: var(--text-main); }
 
-        /* Sidebar - Hidden on mobile, shown on desktop */
         .sidebar { 
             width: var(--sidebar-width); 
             background: var(--sidebar-bg); 
@@ -129,14 +146,12 @@ $recent_appointments = $pdo->query($sql_appointments)->fetchAll(PDO::FETCH_ASSOC
         .dashboard-padding { padding: 20px; width: 100%; max-width: 1400px; margin: 0 auto; }
         .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         
-        /* Grid Layouts - Responsive */
         .charts-grid { 
             display: grid; 
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
             gap: 20px; 
         }
         
-        /* Specific layout for bottom section */
         .bottom-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -145,7 +160,6 @@ $recent_appointments = $pdo->query($sql_appointments)->fetchAll(PDO::FETCH_ASSOC
 
         .chart-container { height: 250px; position: relative; width: 100%; }
         
-        /* Table Responsiveness */
         .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; min-width: 500px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 14px; }
@@ -156,7 +170,6 @@ $recent_appointments = $pdo->query($sql_appointments)->fetchAll(PDO::FETCH_ASSOC
         .btn-action { padding: 6px 12px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-main); border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 12px; }
         .btn-cancel { color: #dc3545; border-color: #dc3545; }
 
-        /* Media Queries */
         @media (max-width: 992px) {
             .bottom-grid { grid-template-columns: 1fr; }
         }
@@ -179,6 +192,7 @@ $recent_appointments = $pdo->query($sql_appointments)->fetchAll(PDO::FETCH_ASSOC
         <div class="nav-links">
             <a href="view_logs.php" class="menu-item"><i class="fas fa-shield-alt"></i> <span>Audit Logs</span></a>
             <a href="admin_dashboard.php" class="menu-item active"><i class="fas fa-home"></i> <span>Home</span></a>
+            <a href="admin_metrics.php" class="menu-item"><i class="fas fa-chart-pie"></i> <span>Salon Metrics</span></a>
             <a href="admin_appointments.php" class="menu-item"><i class="far fa-calendar-alt"></i> <span>Appointments</span></a>
             <a href="admin_financials.php" class="menu-item"><i class="fas fa-chart-line"></i> <span>Financials</span></a>
             <a href="admin_staff.php" class="menu-item"><i class="fas fa-user-tie"></i> <span>Staff</span></a>
@@ -192,7 +206,7 @@ $recent_appointments = $pdo->query($sql_appointments)->fetchAll(PDO::FETCH_ASSOC
             <h2>Dashboard</h2>
             <div class="header-actions">
                 <button id="theme-toggle" class="btn-action">🌙 Mode</button>
-                <a href="../logout.php" class="btn-action" style="background: var(--accent); color: white; border: none;">Logout</a>
+                <a href="../logout.php" class="btn-action" style="background: var(--accent); color: white; border: none;" onclick="return confirm('Are you sure you want to exit?');">Logout</a>
                 <form method="POST" enctype="multipart/form-data" style="margin:0;">
                     <label for="profileUpload"><img src="<?= $admin_image ?>" style="width:35px; height:35px; border-radius:50%; object-fit:cover; cursor:pointer; border: 2px solid var(--accent);"></label>
                     <input type="file" id="profileUpload" name="profile_picture" style="display:none;" onchange="this.form.submit()">
@@ -201,21 +215,29 @@ $recent_appointments = $pdo->query($sql_appointments)->fetchAll(PDO::FETCH_ASSOC
         </div>
 
         <div class="dashboard-padding">
+            <div class="charts-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                <div class="card" style="text-align: center;">
+                    <i class="fas fa-user-plus" style="color: var(--accent); font-size: 2rem; margin-bottom: 10px;"></i>
+                    <p style="color: var(--text-muted); font-size: 0.8rem;">New Customers (This Month)</p>
+                    <h2 style="font-size: 2rem;"><?= $new_customers_count ?></h2>
+                </div>
+            </div>
+
             <div class="charts-grid">
                 <div class="card">
-                    <strong>7-Day Revenue Trend (KES)</strong>
-                    <div class="chart-container"><canvas id="revenueChart"></canvas></div>
+                    <strong>Weekly Performance Comparison</strong>
+                    <div class="chart-container"><canvas id="weeklyComparisonChart"></canvas></div>
                 </div>
                 <div class="card">
-                    <strong>Service Popularity</strong>
+                    <strong>Service Popularity (Requested)</strong>
                     <div class="chart-container"><canvas id="serviceChart"></canvas></div>
                 </div>
             </div>
 
             <div class="bottom-grid">
                 <div class="card">
-                    <strong>Staff Workload (Completed)</strong>
-                    <div class="chart-container"><canvas id="staffChart"></canvas></div>
+                    <strong>7-Day Revenue Trend (KES)</strong>
+                    <div class="chart-container"><canvas id="revenueChart"></canvas></div>
                 </div>
                 
                 <div class="card">
@@ -241,13 +263,23 @@ $recent_appointments = $pdo->query($sql_appointments)->fetchAll(PDO::FETCH_ASSOC
     </div>
 
     <script>
-        // Data and Chart Logic (Same as before, Chart.js handles its own resizing)
         const revLabels = <?= json_encode(array_column($revenue_trend, 'label')) ?>;
         const revData = <?= json_encode(array_column($revenue_trend, 'total')) ?>;
         const svcLabels = <?= json_encode(array_column($service_split, 'label')) ?>;
         const svcData = <?= json_encode(array_column($service_split, 'value')) ?>;
-        const staffLabels = <?= json_encode(array_column($staff_perf, 'label')) ?>;
-        const staffData = <?= json_encode(array_column($staff_perf, 'value')) ?>;
+
+        const weeklyCtx = document.getElementById('weeklyComparisonChart');
+        const weeklyChart = new Chart(weeklyCtx, {
+            type: 'line',
+            data: {
+                labels: <?= json_encode($days) ?>,
+                datasets: [
+                    { label: 'This Week', data: <?= json_encode($this_week_final) ?>, borderColor: '#4caf50', fill: false, tension: 0.3 },
+                    { label: 'Last Week', data: <?= json_encode($last_week_final) ?>, borderColor: '#888', borderDash: [5, 5], fill: false, tension: 0.3 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
 
         const revenueChart = new Chart(document.getElementById('revenueChart'), {
             type: 'line',
@@ -259,12 +291,6 @@ $recent_appointments = $pdo->query($sql_appointments)->fetchAll(PDO::FETCH_ASSOC
             type: 'doughnut',
             data: { labels: svcLabels, datasets: [{ data: svcData, backgroundColor: ['#4caf50', '#2196f3', '#ff9800', '#f44336', '#9c27b0'] }] },
             options: { responsive: true, maintainAspectRatio: false }
-        });
-
-        const staffChart = new Chart(document.getElementById('staffChart'), {
-            type: 'bar',
-            data: { labels: staffLabels, datasets: [{ label: 'Workload', data: staffData, backgroundColor: '#2196f3', borderRadius: 5 }] },
-            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
 
         const themeBtn = document.getElementById('theme-toggle');
@@ -287,7 +313,7 @@ $recent_appointments = $pdo->query($sql_appointments)->fetchAll(PDO::FETCH_ASSOC
 
         function updateChartColors(isDark) {
             const color = isDark ? '#f8f9fa' : '#333';
-            [revenueChart, staffChart].forEach(c => {
+            [revenueChart, weeklyChart].forEach(c => {
                 c.options.scales.x.ticks.color = color;
                 c.options.scales.y.ticks.color = color;
                 c.update();

@@ -1,7 +1,11 @@
 <?php
 // customer/view_receipt.php
 require '../config/db.php';
-session_start();
+
+// Safe session start to prevent the "Notice" error
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 if (!isset($_SESSION['user_id']) || !isset($_GET['id'])) {
     header("Location: dashboard.php");
@@ -13,7 +17,7 @@ $user_id = $_SESSION['user_id'];
 
 // Fetch detailed appointment info
 $stmt = $pdo->prepare("
-    SELECT a.*, s.service_name, s.price_kes, u.full_name AS beautician_name, cust.full_name AS customer_name
+    SELECT a.*, s.service_name, s.price_kes, u.full_name AS beautician_name, cust.full_name AS customer_name, cust.email AS customer_email
     FROM appointments a
     JOIN services s ON a.service_id = s.service_id
     JOIN users u ON a.staff_id = u.user_id
@@ -97,7 +101,7 @@ if (!$receipt) {
         }
 
         /* Buttons */
-        .no-print { display: flex; gap: 10px; justify-content: center; margin-top: 30px; font-family: 'Segoe UI', sans-serif; }
+        .no-print { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 30px; font-family: 'Segoe UI', sans-serif; }
         .btn {
             padding: 10px 20px;
             border-radius: 5px;
@@ -106,8 +110,12 @@ if (!$receipt) {
             font-size: 14px;
             cursor: pointer;
             border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
         .btn-print { background: #333; color: #fff; }
+        .btn-pdf { background: #e67e22; color: #fff; }
         .btn-back { background: transparent; border: 1px solid #666; color: #666; }
         body.dark-mode .btn-back { color: #adb5bd; border-color: #adb5bd; }
 
@@ -165,6 +173,11 @@ if (!$receipt) {
         <button onclick="window.print()" class="btn btn-print">
             <i class="fas fa-print"></i> Print
         </button>
+
+        <a href="../actions/download_receipt.php?id=<?php echo $appointment_id; ?>" class="btn btn-pdf">
+            <i class="fas fa-file-pdf"></i> Download PDF
+        </a>
+
         <a href="dashboard.php" class="btn btn-back">Back to Dashboard</a>
     </div>
 </div>

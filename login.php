@@ -21,7 +21,7 @@
 </head>
 <body>
     
-    <nav class="navbar">
+    <nav class="navbar" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
         <div style="font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 10px;">
             <i class="fas fa-spa"></i> 
             <span class="logo-text">Elvis Midega Salon</span>

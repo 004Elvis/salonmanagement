@@ -9,6 +9,20 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
     exit;
 }
 
+// --- STREAMLINED UPDATE LOGIC ---
+// Handling completion and cancellation via POST to avoid "Endpoint Errors"
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    $appt_id = $_POST['appointment_id'];
+    $action = $_POST['action'];
+    $new_status = ($action === 'complete') ? 'Completed' : 'Cancelled';
+
+    $stmt = $pdo->prepare("UPDATE appointments SET status = ? WHERE appointment_id = ?");
+    if ($stmt->execute([$new_status, $appt_id])) {
+        header("Location: admin_appointments.php?success=1");
+        exit();
+    }
+}
+
 $admin_image = "../assets/images/default_profile.png"; 
 
 // Fetch ALL Appointments
@@ -61,7 +75,6 @@ $all_appointments = $stmt_all->fetchAll(PDO::FETCH_ASSOC);
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; transition: background 0.3s, color 0.3s; }
         body { display: flex; height: 100vh; background-color: var(--main-bg); color: var(--text-main); }
 
-        /* Sidebar Responsive */
         .sidebar { width: 250px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; flex-shrink: 0; }
         .brand { font-size: 1.2rem; font-weight: bold; padding: 25px 20px; border-bottom: 1px solid var(--border-color); margin-bottom: 15px; }
         .nav-links { padding: 0 15px; }
@@ -69,7 +82,6 @@ $all_appointments = $stmt_all->fetchAll(PDO::FETCH_ASSOC);
         .menu-item:hover, .menu-item.active { background-color: rgba(76, 175, 80, 0.1); color: var(--accent); font-weight: 600; }
         .menu-item i { margin-right: 15px; width: 20px; text-align: center; color: var(--text-muted); }
         
-        /* Main Content */
         .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
         .header { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--card-bg); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; }
         .header h2 { font-size: 1.4rem; }
@@ -77,32 +89,32 @@ $all_appointments = $stmt_all->fetchAll(PDO::FETCH_ASSOC);
         .dashboard-padding { padding: 20px; }
         .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-        /* Responsive Table Wrapper */
+        /* Search Bar Styles */
+        .search-container { margin-bottom: 20px; position: relative; max-width: 400px; }
+        .search-container input { width: 100%; padding: 10px 15px 10px 40px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--main-bg); color: var(--text-main); outline: none; }
+        .search-container i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+
         .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; min-width: 600px; }
         th, td { text-align: left; padding: 12px 15px; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; }
         th { color: var(--text-muted); font-weight: 600; background: var(--card-bg); }
         
-        /* Action Buttons */
-        .btn-action { padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; font-weight: 600; border: 1px solid transparent; }
+        .btn-action { padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; font-weight: 600; border: 1px solid transparent; background: none; }
         .btn-cancel { background-color: var(--danger-bg); color: var(--danger-color); border-color: var(--danger-color); }
         .btn-complete { background-color: var(--success-bg); color: var(--success-color); border-color: var(--success-color); }
         .btn-receipt { background-color: var(--border-color); color: var(--text-main); border-color: var(--text-muted); }
 
-        /* Status Badges */
         .status { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
         .status.booked, .status.confirmed, .status.pending { background: #e0f2fe; color: #0284c7; }
         .status.completed { background: var(--success-bg); color: var(--success-color); }
         .status.cancelled { background: var(--danger-bg); color: var(--danger-color); }
 
-        /* Mobile Adjustments */
         @media (max-width: 768px) {
             .sidebar { width: 70px; }
             .brand, .menu-item span { display: none; }
             .menu-item i { margin-right: 0; font-size: 1.2rem; }
             .header { padding: 10px 15px; }
             .header h2 { font-size: 1.1rem; }
-            .dashboard-padding { padding: 10px; }
         }
     </style>
 </head>
@@ -133,8 +145,13 @@ $all_appointments = $stmt_all->fetchAll(PDO::FETCH_ASSOC);
 
         <div class="dashboard-padding">
             <div class="card">
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="appointmentSearch" placeholder="Search staff, service, or client..." onkeyup="filterAppointments()">
+                </div>
+
                 <div class="table-responsive">
-                    <table>
+                    <table id="appointmentsTable">
                         <thead>
                             <tr>
                                 <th>Date/Time</th>
@@ -149,11 +166,11 @@ $all_appointments = $stmt_all->fetchAll(PDO::FETCH_ASSOC);
                             <?php if (count($all_appointments) > 0): ?>
                                 <?php foreach ($all_appointments as $row): ?>
                                 <?php $status_low = strtolower($row['status']); ?>
-                                <tr>
+                                <tr class="appointment-row">
                                     <td><strong><?php echo date('M d', strtotime($row['appointment_date'])); ?></strong><br><small><?php echo date('h:i A', strtotime($row['appointment_time'])); ?></small></td>
-                                    <td><?php echo htmlspecialchars($row['client_name']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['service_name']); ?></td>
-                                    <td><?php echo htmlspecialchars($row['staff_name']); ?></td>
+                                    <td class="client-name"><?php echo htmlspecialchars($row['client_name']); ?></td>
+                                    <td class="service-name"><?php echo htmlspecialchars($row['service_name']); ?></td>
+                                    <td class="staff-name"><?php echo htmlspecialchars($row['staff_name']); ?></td>
                                     <td>
                                         <span class="status <?php echo $status_low; ?>">
                                             <?php echo htmlspecialchars($row['status']); ?>
@@ -162,12 +179,21 @@ $all_appointments = $stmt_all->fetchAll(PDO::FETCH_ASSOC);
                                     <td>
                                         <div style="display:flex; gap:5px;">
                                             <?php if ($status_low === 'confirmed' || $status_low === 'pending'): ?>
-                                                <button class="btn-action btn-complete" onclick="completeAppointment(<?php echo $row['appointment_id']; ?>)">
-                                                    <i class="fas fa-check"></i> Complete
-                                                </button>
-                                                <button class="btn-action btn-cancel" onclick="cancelAppointment(<?php echo $row['appointment_id']; ?>)">
-                                                    <i class="fas fa-times"></i> Cancel
-                                                </button>
+                                                <form method="POST" onsubmit="return confirm('Mark as Completed?')">
+                                                    <input type="hidden" name="appointment_id" value="<?php echo $row['appointment_id']; ?>">
+                                                    <input type="hidden" name="action" value="complete">
+                                                    <button type="submit" class="btn-action btn-complete">
+                                                        <i class="fas fa-check"></i> Complete
+                                                    </button>
+                                                </form>
+                                                
+                                                <form method="POST" onsubmit="return confirm('Cancel this appointment?')">
+                                                    <input type="hidden" name="appointment_id" value="<?php echo $row['appointment_id']; ?>">
+                                                    <input type="hidden" name="action" value="cancel">
+                                                    <button type="submit" class="btn-action btn-cancel">
+                                                        <i class="fas fa-times"></i> Cancel
+                                                    </button>
+                                                </form>
                                             <?php elseif ($status_low === 'completed'): ?>
                                                 <a href="view_receipt.php?id=<?php echo $row['appointment_id']; ?>" class="btn-action btn-receipt">
                                                     <i class="fas fa-file-invoice"></i> Receipt
@@ -180,7 +206,7 @@ $all_appointments = $stmt_all->fetchAll(PDO::FETCH_ASSOC);
                                 </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <tr><td colspan="6">No appointments found in the system.</td></tr>
+                                <tr><td colspan="6">No appointments found.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
@@ -190,48 +216,26 @@ $all_appointments = $stmt_all->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
     <script>
-        // Apply Global Theme
         const savedTheme = localStorage.getItem('admin-theme');
-        if (savedTheme === 'dark') {
-            document.body.classList.add('dark-mode');
-        }
+        if (savedTheme === 'dark') { document.body.classList.add('dark-mode'); }
 
-        function completeAppointment(id) {
-            if (confirm("Mark this service as Completed and generate receipt?")) {
-                fetch('api/complete_appointment.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: 'appointment_id=' + id
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if(data.success) {
-                        location.reload();
-                    } else {
-                        alert("Error: " + data.message);
-                    }
-                })
-                .catch(err => alert("Path Error: Check API endpoint connection."));
-            }
-        }
+        // Live Search Filter Function
+        function filterAppointments() {
+            const input = document.getElementById('appointmentSearch');
+            const filter = input.value.toLowerCase();
+            const rows = document.querySelectorAll('.appointment-row');
 
-        function cancelAppointment(id) {
-            if (confirm("Are you sure you want to cancel this appointment?")) {
-                fetch('api/cancel_appointment_handler.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: 'appointment_id=' + id
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if(data.success) {
-                        location.reload();
-                    } else {
-                        alert("Error: " + data.message);
-                    }
-                })
-                .catch(err => alert("Connection Error: " + err));
-            }
+            rows.forEach(row => {
+                const client = row.querySelector('.client-name').textContent.toLowerCase();
+                const service = row.querySelector('.service-name').textContent.toLowerCase();
+                const staff = row.querySelector('.staff-name').textContent.toLowerCase();
+
+                if (client.includes(filter) || service.includes(filter) || staff.includes(filter)) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
         }
     </script>
 </body>
