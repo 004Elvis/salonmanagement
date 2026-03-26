@@ -97,14 +97,14 @@ if (isset($_GET['reschedule_id'])) {
             font-size: 1rem;
         }
 
-        /* --- CALENDAR VISIBILITY FIXES (FORCED BLACK TEXT) --- */
+        /* --- CALENDAR VISIBILITY FIXES --- */
         .flatpickr-calendar {
             z-index: 9999 !important;
-            background: #ffffff !important; /* Force white background */
+            background: #ffffff !important; /* white background */
             border: 1px solid #ccc !important;
         }
 
-        /* Force ALL text to be black regardless of mode */
+        /* Makes the texts inside the calender to be black despite the background mode */
         .flatpickr-day, 
         .flatpickr-weekday, 
         .cur-month, 
@@ -140,6 +140,7 @@ if (isset($_GET['reschedule_id'])) {
         .btn-danger { background: var(--danger); color: white; width: 100%; }
         .back-link { display: block; text-align: center; margin-top: 20px; color: var(--text-muted); text-decoration: none; font-size: 0.9rem; }
     </style>
+    <link rel="stylesheet" href="../assets/css/responsive.css">
 </head>
 <body>
     <div class="login-container">

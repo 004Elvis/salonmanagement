@@ -118,6 +118,7 @@ $clients = $stmt_clients->fetchAll(PDO::FETCH_ASSOC);
             .dashboard-padding { padding: 15px; }
         }
     </style>
+    <link rel="stylesheet" href="../assets/css/responsive.css">
 </head>
 <body>
 

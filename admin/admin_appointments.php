@@ -117,6 +117,7 @@ $all_appointments = $stmt_all->fetchAll(PDO::FETCH_ASSOC);
             .header h2 { font-size: 1.1rem; }
         }
     </style>
+     <link rel="stylesheet" href="../assets/css/responsive.css">
 </head>
 <body>
 

@@ -128,6 +128,7 @@ $salon_hours = $pdo->query("SELECT * FROM salon_settings ORDER BY FIELD(day_of_w
             .service-add-form { flex-direction: column; align-items: stretch !important; gap: 10px; }
         }
     </style>
+    <link rel="stylesheet" href="../assets/css/responsive.css">
 </head>
 <body>
 

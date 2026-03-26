@@ -44,6 +44,7 @@ if ($token && !$isSuccess) {
             h2 { font-size: 1.5rem !important; }
         }
     </style>
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
 

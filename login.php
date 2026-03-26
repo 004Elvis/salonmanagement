@@ -18,6 +18,7 @@
             .login-card { padding: 25px !important; }
         }
     </style>
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
     

@@ -6,6 +6,7 @@
     <title>Elvis Midega Salon - Home</title>
     
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="../assets/CSS/responsive.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
@@ -170,12 +171,14 @@
             margin: 0;
         }
     </style>
+    <link rel="stylesheet" href="assets/CSS/responsive.css">
 </head>
 <body>
 
     <div class="hero-section">
         
         <header class="navbar-home">
+            <button class="hamburger" id="hamburger-btn" aria-label="Open menu"><span></span><span></span><span></span></button>
             <div class="logo-block">
                 <span class="logo-main">ELVISMIDEGA</span><br>
                 <span class="logo-sub">salon</span>
@@ -288,5 +291,57 @@
             });
         });
     </script>
+
+    <!-- ===== MOBILE NAV DRAWER ===== -->
+    <div class="mobile-nav-overlay" id="mobile-nav">
+        <button class="mobile-nav-close" id="mobile-nav-close" aria-label="Close menu">&times;</button>
+
+        <button class="mobile-drop-btn" onclick="toggleMobileSub('sub-team')">Meet Our Team ▾</button>
+        <div class="mobile-nav-sub" id="sub-team">
+            <a href="#">Achieng Odhiambo</a>
+            <a href="#">Wanjiku Kamau</a>
+            <a href="#">Kevin Otieno</a>
+            <a href="#">Zainab Ali</a>
+            <a href="#">Brian Kiprop</a>
+            <a href="#">Mercy Chebet</a>
+        </div>
+
+        <button class="mobile-drop-btn" onclick="toggleMobileSub('sub-services')">Services ▾</button>
+        <div class="mobile-nav-sub" id="sub-services">
+            <a href="#">Full Manicure — KES 1,500</a>
+            <a href="#">Gel Pedicure — KES 2,000</a>
+            <a href="#">Swedish Massage — KES 3,500</a>
+            <a href="#">Braiding (Knotless) — KES 4,500</a>
+            <a href="#">Standard Haircut — KES 500</a>
+            <a href="#">Facial Treatment — KES 2,500</a>
+        </div>
+
+        <button class="mobile-drop-btn" onclick="toggleMobileSub('sub-about')">The Salon ▾</button>
+        <div class="mobile-nav-sub" id="sub-about">
+            <a href="#" style="white-space: normal; line-height: 1.6; font-size: 0.9rem; color: #ccc;">
+                Welcome to our salon, where beauty, relaxation, and confidence come together. 
+                We are here to give you more than just a service — we are here to give you an experience.
+            </a>
+        </div>
+
+        <a href="login.php" style="color: #4caf50; font-weight: bold; margin-top: 10px;">Sign In / Book</a>
+    </div>
+
+    <script>
+        // Hamburger open/close
+        document.getElementById('hamburger-btn').addEventListener('click', function() {
+            document.getElementById('mobile-nav').classList.add('open');
+        });
+        document.getElementById('mobile-nav-close').addEventListener('click', function() {
+            document.getElementById('mobile-nav').classList.remove('open');
+        });
+
+        // Accordion sub-menus inside mobile drawer
+        function toggleMobileSub(id) {
+            var el = document.getElementById(id);
+            el.classList.toggle('open');
+        }
+    </script>
+
 </body>
 </html>

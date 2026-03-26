@@ -13,6 +13,7 @@ if (session_status() === PHP_SESSION_NONE) {
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/style.css">
+    
 
     <style>
         /* Responsive Navigation Styling */
@@ -121,6 +122,7 @@ if (session_status() === PHP_SESSION_NONE) {
             color: var(--text-main);
         }
     </style>
+    <link rel="stylesheet" href="../assets/css/responsive.css">
 </head>
 <body>
 

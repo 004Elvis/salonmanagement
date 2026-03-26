@@ -184,6 +184,7 @@ $recent_appointments = $pdo->query($sql_appointments)->fetchAll(PDO::FETCH_ASSOC
             .charts-grid { grid-template-columns: 1fr; }
         }
     </style>
+    <link rel="stylesheet" href="../assets/css/responsive.css">
 </head>
 <body>
 

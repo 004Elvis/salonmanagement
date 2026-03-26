@@ -152,6 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             h2 { font-size: 1.2rem; }
         }
     </style>
+    <link rel="stylesheet" href="../assets/css/responsive.css">
 </head>
 <body>
 

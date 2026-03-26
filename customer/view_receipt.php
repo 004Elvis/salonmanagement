@@ -131,6 +131,7 @@ if (!$receipt) {
             .total-row { font-size: 1rem; }
         }
     </style>
+    <link rel="stylesheet" href="../assets/css/responsive.css">
 </head>
 <body>
 

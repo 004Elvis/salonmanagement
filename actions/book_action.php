@@ -52,7 +52,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$user_id, $service_id, $staff_id, $date, $time]);
 
-        // 2. Fetch User & Service details for the email (The CRITICAL FIX)
+        // 2. Fetch User & Service details for the email
         $info_stmt = $pdo->prepare("
             SELECT u.email, u.full_name, s.service_name 
             FROM users u, services s 
@@ -72,7 +72,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // Send confirmation to CUSTOMER
             sendEmail($customer_email, $customer_name, $service_name, $formatted_date, $formatted_time, 'customer');
             
-            // Send notification to ADMIN (Optional - so YOU know someone booked)
+            // Send notification to ADMIN (Optional - So that i can a notification when someone books)
             sendEmail('ochiengengineer17@gmail.com', 'Admin', $service_name, $formatted_date, $formatted_time, 'admin', $customer_name);
         }
 

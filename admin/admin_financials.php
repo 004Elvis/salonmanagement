@@ -167,6 +167,7 @@ $transactions = $stmt_transactions->fetchAll(PDO::FETCH_ASSOC);
             canvas { max-width: 100% !important; height: auto !important; }
         }
     </style>
+    <link rel="stylesheet" href="../assets/css/responsive.css">
 </head>
 <body>
 

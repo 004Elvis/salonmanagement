@@ -31,7 +31,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_SESSION['user_id'])) {
     $user_id = $_SESSION['user_id'];
 
     try {
-        // 1. Fetch details BEFORE updating so we have data for the email
+        // 1. Fetch details BEFORE updating for email data
         $info_stmt = $pdo->prepare("
             SELECT u.email, u.full_name, s.service_name, a.appointment_date, a.appointment_time
             FROM users u
@@ -43,7 +43,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_SESSION['user_id'])) {
         $details = $info_stmt->fetch();
 
         if ($details) {
-            // 2. Update status to Cancelled. (We don't DELETE it so you keep the history!)
+            // 2. Update status to Cancelled.
             $sql = "UPDATE appointments SET status = 'Cancelled' WHERE appointment_id = ? AND customer_id = ?";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$appt_id, $user_id]);

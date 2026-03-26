@@ -43,7 +43,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     try {
         // 1. Update the appointment in the database
-        // We set status back to 'Pending' because a reschedule usually needs new approval
+        // status is set back to 'Pending' because a reschedule needs new approval
         $sql = "UPDATE appointments 
                 SET service_id = ?, staff_id = ?, appointment_date = ?, appointment_time = ?, status = 'Pending' 
                 WHERE appointment_id = ? AND customer_id = ?";

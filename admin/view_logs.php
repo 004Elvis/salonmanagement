@@ -86,6 +86,7 @@ try {
             .dashboard-padding { padding: 15px; }
         }
     </style>
+    <link rel="stylesheet" href="../assets/css/responsive.css">
 </head>
 <body>
 

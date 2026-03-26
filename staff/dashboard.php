@@ -186,6 +186,7 @@ $clients = $stmt->fetchAll();
         .metric-value { font-size: 1.2rem; font-weight: bold; color: var(--accent); }
         .metric-label { font-size: 0.8rem; color: var(--text-muted); }
     </style>
+    <link rel="stylesheet" href="../assets/css/responsive.css">
 </head>
 <body class="<?= isset($_COOKIE['theme']) && $_COOKIE['theme'] == 'dark' ? 'dark-mode' : '' ?>">
 

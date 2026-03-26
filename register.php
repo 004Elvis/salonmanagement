@@ -40,6 +40,7 @@ try {
             .btn-primary { padding: 12px; }
         }
     </style>
+    <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
     <nav style="width: 100%; padding: 20px; display: flex; justify-content: space-between; align-items: center;">

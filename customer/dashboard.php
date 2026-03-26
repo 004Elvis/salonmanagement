@@ -82,6 +82,10 @@ $appointments = $stmt->fetchAll();
             --border-color: #373b3e;
         }
 
+        /* Payment Button Styling */
+        .btn-pay { background-color: #25d366; color: white; border: none; }
+        .btn-pay:hover { background-color: #128c7e; color: white; }
+
         * { transition: background 0.3s, color 0.3s; box-sizing: border-box; }
         
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--body-bg); color: var(--text-main); margin: 0; padding: 0; }
@@ -136,7 +140,7 @@ $appointments = $stmt->fetchAll();
         /* Mobile Adjustments */
         @media (max-width: 600px) {
             .navbar { padding: 10px 15px; }
-            .navbar-brand span { display: none; } /* Hide text, keep emoji if needed */
+            .navbar-brand span { display: none; } 
             .btn-book { padding: 6px 10px; font-size: 12px; }
             .appointment-card { flex-direction: column; align-items: flex-start; }
             .appt-actions { width: 100%; align-items: flex-start; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px; }
@@ -144,6 +148,7 @@ $appointments = $stmt->fetchAll();
             .btn-sm { flex: 1; text-align: center; }
         }
     </style>
+    <link rel="stylesheet" href="../assets/css/responsive.css">
 </head>
 <body>
 
@@ -202,9 +207,14 @@ $appointments = $stmt->fetchAll();
                                 </form>
                             </div>
                         <?php elseif ($status_low === 'completed'): ?>
-                            <a href="view_receipt.php?id=<?php echo $appt['appointment_id']; ?>" class="btn-sm btn-receipt">
-                                <i class="fas fa-file-invoice"></i> View Receipt
-                            </a>
+                            <div style="display: flex; flex-direction: column; gap: 5px; width: 100%;">
+                                <button onclick="initiatePayment('<?php echo $appt['price_kes']; ?>')" class="btn-sm btn-pay">
+                                    <i class="fas fa-mobile-alt"></i> Pay via M-Pesa
+                                </button>
+                                <a href="view_receipt.php?id=<?php echo $appt['appointment_id']; ?>" class="btn-sm btn-receipt">
+                                    <i class="fas fa-file-invoice"></i> View Receipt
+                                </a>
+                            </div>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -240,9 +250,37 @@ $appointments = $stmt->fetchAll();
             applyTheme(theme);
         });
 
-        // Sync with LocalStorage (Matches Admin/Staff keys)
         const savedTheme = localStorage.getItem('customer-theme') || localStorage.getItem('admin-theme');
         applyTheme(savedTheme);
+
+        // --- DARAJA API PAYMENT TRIGGER ---
+        function initiatePayment(amount) {
+            const phone = prompt("Enter your M-Pesa Phone Number (254...):", "254");
+            
+            if (phone && phone.length >= 10) {
+                // Show loading state (Optional)
+                alert("Initiating payment request for KES " + amount + "...");
+
+                fetch('../payments/stkPush.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        phone: phone,
+                        amount: amount 
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert("Please check your phone for the M-Pesa prompt and enter your PIN.");
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert("Something went wrong. Please try again.");
+                });
+            } else {
+                alert("Valid phone number is required to proceed.");
+            }
+        }
     </script>
 </body>
 </html>

@@ -168,6 +168,7 @@ while ($row = $stmt->fetch()) {
             input[type="time"] { flex: 1; }
         }
     </style>
+    <link rel="stylesheet" href="../assets/css/responsive.css">
 </head>
 <body>
 

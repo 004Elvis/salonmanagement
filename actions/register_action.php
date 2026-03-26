@@ -17,9 +17,9 @@ try {
     $log_stmt->execute([$endpoint_name, $log_user_id, $log_user_role]);
     $current_log_id = $pdo->lastInsertId(); // Save this to update it if registration succeeds
 } catch (Exception $e) {
-    // Logging failure should not prevent registration
+    
 }
-// --- END OF API TRACKING UPDATE ---
+// --- END OF API TRACKING  ---
 
 // 2. Check if the form was submitted via POST
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -32,7 +32,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
     $question_id = $_POST['security_question_id'];
-    $security_answer = strtolower(trim($_POST['security_answer'])); // Normalize answer to lowercase for consistency
+    $security_answer = strtolower(trim($_POST['security_answer'])); 
 
     // 4. Basic Validation
     if (empty($full_name) || empty($email) || empty($password) || empty($security_answer)) {

@@ -115,6 +115,7 @@ $prev_month = $prev_month_stmt->fetch();
             body { background: white; color: black; }
         }
     </style>
+    <link rel="stylesheet" href="../assets/css/responsive.css">
 </head>
 <body>
 

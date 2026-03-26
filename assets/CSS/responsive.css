@@ -1,0 +1,564 @@
+/* ============================================================
+   responsive.css — Elvis Midega Salon
+   Mobile-first responsive overrides for all modules.
+   Add this AFTER style.css in every page's <head>.
+   Breakpoints:
+     xs  < 480px   (small phones like Oppo A38)
+     sm  < 600px   (most Android phones)
+     md  < 768px   (large phones / small tablets)
+     lg  < 992px   (tablets)
+   ============================================================ */
+
+
+/* ============================================================
+   1. GLOBAL UTILITIES
+   ============================================================ */
+
+/* Prevent horizontal scroll on any page */
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* All images scale down */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Scrollable table wrapper — already used in most pages but
+   this ensures it never causes overflow anywhere             */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+
+/* ============================================================
+   2. LANDING PAGE  (index.php)
+   ============================================================ */
+
+/* Hamburger toggle — hidden on desktop */
+.hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    z-index: 200;
+    background: none;
+    border: none;
+    padding: 5px;
+}
+
+.hamburger span {
+    display: block;
+    width: 25px;
+    height: 3px;
+    background: white;
+    border-radius: 3px;
+    transition: all 0.3s ease;
+}
+
+/* Mobile nav drawer */
+.mobile-nav-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 150;
+    flex-direction: column;
+    padding: 80px 30px 40px;
+    overflow-y: auto;
+}
+
+.mobile-nav-overlay.open {
+    display: flex;
+}
+
+.mobile-nav-overlay a,
+.mobile-nav-overlay .mobile-drop-btn {
+    color: white;
+    font-size: 1.1rem;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    text-decoration: none;
+    display: block;
+    cursor: pointer;
+    background: none;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    font-family: inherit;
+    text-align: left;
+    width: 100%;
+}
+
+.mobile-nav-overlay a:last-child {
+    border-bottom: none;
+}
+
+.mobile-nav-sub {
+    padding-left: 15px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.mobile-nav-sub.open {
+    max-height: 600px;
+}
+
+.mobile-nav-sub a {
+    font-size: 0.95rem;
+    color: #ccc;
+    padding: 10px 0;
+}
+
+/* Close (×) button inside drawer */
+.mobile-nav-close {
+    position: absolute;
+    top: 20px;
+    right: 25px;
+    font-size: 2rem;
+    color: white;
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 1;
+}
+
+@media (max-width: 768px) {
+    /* Show hamburger, hide desktop nav */
+    .hamburger { display: flex; }
+    .nav-right { display: none !important; }
+
+    /* Tighten the navbar */
+    .navbar-home {
+        padding: 15px 20px;
+    }
+
+    /* Scale down the massive headline */
+    .main-heading {
+        font-size: 2.6rem !important;
+        letter-spacing: 4px !important;
+    }
+
+    .contact-info {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-heading {
+        font-size: 2rem !important;
+        letter-spacing: 2px !important;
+    }
+
+    .logo-main {
+        font-size: 1rem !important;
+    }
+}
+
+
+/* ============================================================
+   3. ADMIN SIDEBAR PAGES
+   (admin_dashboard, admin_appointments, admin_financials,
+    admin_staff, admin_clients, admin_settings, admin_metrics,
+    view_logs)
+   ============================================================ */
+
+@media (max-width: 768px) {
+    /* Allow body to scroll — don't lock at 100vh */
+    body {
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* Sidebar slides to a top horizontal strip */
+    .sidebar {
+        width: 100% !important;
+        height: auto !important;
+        flex-direction: row !important;
+        position: relative !important;
+        border-right: none !important;
+        border-bottom: 1px solid var(--border-color, #dee2e6) !important;
+        overflow-x: auto !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* Stack sidebar and main content vertically */
+    body > div,
+    body {
+        flex-direction: column !important;
+    }
+
+    /* Brand stays visible */
+    .brand,
+    .sidebar-header {
+        display: block !important;
+        padding: 12px 15px !important;
+        font-size: 1rem !important;
+        border-bottom: 1px solid var(--border-color, #dee2e6) !important;
+        white-space: nowrap;
+    }
+
+    /* Nav links become a horizontal scrollable row */
+    .nav-links,
+    .sidebar .nav-links {
+        display: flex !important;
+        flex-direction: row !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        padding: 5px 8px !important;
+        flex: 1;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Each menu item is compact */
+    .menu-item {
+        padding: 10px 14px !important;
+        flex-shrink: 0 !important;
+        border-radius: 6px !important;
+        font-size: 0.82rem !important;
+        margin-bottom: 0 !important;
+    }
+
+    /* Always show text labels in horizontal nav */
+    .menu-item span,
+    .brand {
+        display: inline !important;
+    }
+
+    .menu-item i {
+        margin-right: 6px !important;
+        font-size: 0.9rem !important;
+    }
+
+    /* Main content takes full width */
+    .main-content {
+        width: 100% !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+    }
+
+    /* Header bar */
+    .header {
+        padding: 12px 15px !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+    }
+
+    .header h2 {
+        font-size: 1rem !important;
+    }
+
+    .header-actions {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+
+    /* Dashboard padding */
+    .dashboard-padding {
+        padding: 12px !important;
+    }
+
+    /* Grids go single column */
+    .charts-grid,
+    .bottom-grid,
+    .summary-grid,
+    .grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Stats row wraps */
+    .stats-row,
+    [style*="display: flex"][style*="justify-content: space-around"] {
+        flex-wrap: wrap !important;
+    }
+
+    /* Filter forms stack */
+    .filter-form {
+        flex-direction: column !important;
+    }
+
+    /* Search bar full width */
+    .search-container {
+        max-width: 100% !important;
+    }
+
+    /* Action bars wrap */
+    .actions-bar {
+        flex-wrap: wrap !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .menu-item {
+        padding: 8px 10px !important;
+        font-size: 0.78rem !important;
+    }
+
+    .header h2 {
+        font-size: 0.9rem !important;
+    }
+
+    th, td {
+        padding: 8px 10px !important;
+        font-size: 0.8rem !important;
+    }
+}
+
+
+/* ============================================================
+   4. STAFF DASHBOARD  (staff/dashboard.php)
+   ============================================================ */
+
+@media (max-width: 768px) {
+    /* Fix locked overflow that prevents scrolling */
+    body {
+        overflow: auto !important;
+        height: auto !important;
+    }
+
+    .main-wrapper {
+        overflow: visible !important;
+        height: auto !important;
+    }
+
+    .content {
+        overflow: visible !important;
+        padding: 12px !important;
+    }
+
+    /* Sidebar → horizontal top bar */
+    .sidebar {
+        width: 100% !important;
+        height: auto !important;
+        flex-direction: row !important;
+        border-right: none !important;
+        border-bottom: 1px solid var(--border-color, #ddd) !important;
+        overflow-x: auto !important;
+    }
+
+    .sidebar-header {
+        display: none !important;
+    }
+
+    .nav-menu {
+        display: flex !important;
+        flex-direction: row !important;
+        padding: 5px 10px !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        -webkit-overflow-scrolling: touch;
+        list-style: none !important;
+    }
+
+    .nav-item {
+        padding: 10px 12px !important;
+        flex-shrink: 0 !important;
+        font-size: 0.82rem !important;
+        border-radius: 6px !important;
+    }
+
+    .nav-item span {
+        display: inline !important;
+    }
+
+    /* Topbar */
+    .topbar {
+        height: auto !important;
+        flex-wrap: wrap !important;
+        padding: 10px 12px !important;
+        gap: 8px !important;
+    }
+
+    /* Charts grid single column */
+    .dashboard-grid,
+    [style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+        display: grid !important;
+    }
+
+    /* Metrics cards wrap */
+    [style*="display: flex"][style*="justify-content: space-around"] {
+        flex-wrap: wrap !important;
+    }
+
+    .metric-card {
+        flex: 1 1 45% !important;
+        border-right: none !important;
+        border-bottom: 1px solid var(--border-color, #ddd) !important;
+        padding: 12px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .metric-card {
+        flex: 1 1 100% !important;
+    }
+
+    .btn-style {
+        font-size: 0.78rem !important;
+        padding: 6px 10px !important;
+    }
+}
+
+
+/* ============================================================
+   5. CUSTOMER DASHBOARD  (customer/dashboard.php)
+   ============================================================ */
+
+@media (max-width: 600px) {
+    /* Appointment card stacks vertically */
+    .appointment-card {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+
+    .appt-actions {
+        width: 100% !important;
+        align-items: flex-start !important;
+        margin-top: 12px !important;
+        border-top: 1px solid var(--border-color, #dee2e6) !important;
+        padding-top: 12px !important;
+        flex-wrap: wrap !important;
+        flex-direction: row !important;
+        gap: 8px !important;
+    }
+
+    .btn-sm {
+        flex: 1 1 auto !important;
+        text-align: center !important;
+        min-width: 80px !important;
+    }
+
+    .navbar {
+        padding: 10px 12px !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+
+    .nav-actions {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+
+    .container {
+        padding: 0 10px !important;
+        margin-top: 15px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .appt-details h3 {
+        font-size: 15px !important;
+    }
+
+    .appt-details p {
+        font-size: 12px !important;
+    }
+}
+
+
+/* ============================================================
+   6. BOOKING PAGE  (customer/book.php)
+   ============================================================ */
+
+@media (max-width: 480px) {
+    .login-container {
+        padding: 10px !important;
+    }
+
+    .login-card {
+        padding: 20px 15px !important;
+    }
+}
+
+
+/* ============================================================
+   7. LOGIN, REGISTER, FORGOT PASSWORD PAGES
+   ============================================================ */
+
+@media (max-width: 480px) {
+    .login-card,
+    .register-card {
+        padding: 25px 15px !important;
+        margin: 10px !important;
+    }
+
+    h2 {
+        font-size: 1.3rem !important;
+    }
+
+    .btn {
+        padding: 11px !important;
+        font-size: 0.9rem !important;
+    }
+}
+
+
+/* ============================================================
+   8. STAFF AVAILABILITY PAGE  (staff/availability.php)
+   ============================================================ */
+
+@media (max-width: 768px) {
+    /* Reuse the global sidebar fix above — covers this page too */
+
+    /* Availability time-slot grid if present */
+    .availability-grid,
+    [class*="availability"] {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+
+/* ============================================================
+   9. ADMIN SETTINGS PAGE  (admin/admin_settings.php)
+   ============================================================ */
+
+@media (max-width: 768px) {
+    /* Settings forms go full-width */
+    .settings-form,
+    form {
+        width: 100% !important;
+    }
+
+    .settings-grid,
+    [class*="settings-grid"] {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+
+/* ============================================================
+   10. GENERAL ADMIN HEADER ACTION BUTTONS
+   ============================================================ */
+
+@media (max-width: 600px) {
+    .header-actions a,
+    .header-actions button {
+        font-size: 0.75rem !important;
+        padding: 5px 10px !important;
+    }
+
+    /* Print / PDF buttons — move to wrap nicely */
+    .noprint {
+        flex-wrap: wrap !important;
+    }
+}
+
+
+/* ============================================================
+   11. SHARED FOOTER  (includes/footer.php)
+   ============================================================ */
+
+@media (max-width: 480px) {
+    footer,
+    .footer {
+        font-size: 0.78rem !important;
+        padding: 10px !important;
+        text-align: center !important;
+    }
+}
