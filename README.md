@@ -1,4 +1,8 @@
 # Elvis Midega Beauty Salon Management System
+=============================================
+You can access the website on the link below:
+https://elvis-salon.iceiy.com/?i=1
+=============================================
 
 A comprehensive, professional web application designed to streamline salon operations. This system manages client bookings, staff schedules, and financial analytics with a focus on Role-Based Access Control (RBAC) and a modern, responsive user experience.
 
@@ -15,13 +19,6 @@ A comprehensive, professional web application designed to streamline salon opera
 - **Charts:** Chart.js (CDN)
 - **Email:** PHPMailer
 - **Icons:** FontAwesome 6
-
-## 📦 Installation
-1. Clone or download this repository into your local server directory (e.g., `htdocs` for XAMPP).
-2. Import the provided `.sql` file into your MySQL database via phpMyAdmin.
-3. Configure your database connection in `config/db.php`.
-4. (Optional) Update PHPMailer credentials in `staff/dashboard.php` and `actions/` to your business email settings.
-5. Access the project via `localhost/elvis_salon/index.php`.
 
 ---
 *Developed by Elvis Midega - 2026*
